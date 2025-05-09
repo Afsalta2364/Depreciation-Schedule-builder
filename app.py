@@ -6,40 +6,19 @@ from dateutil.relativedelta import relativedelta
 # ------------------ GAAP Logic ------------------
 GAAP_USEFUL_LIVES = {
     "US GAAP": {
-        "Building": 40,
-        "Vehicle": 5,
-        "Machinery": 10,
-        "Furniture": 7,
-        "Computer Equipment": 5,
-        "Office Equipment": 5,
-        "Leasehold Improvements": 15,
-        "Land Improvements": 20,
-        "Software": 3,
-        "Intangible Asset (e.g., Patent)": 10
+        "Building": 40, "Vehicle": 5, "Machinery": 10, "Furniture": 7,
+        "Computer Equipment": 5, "Office Equipment": 5, "Leasehold Improvements": 15,
+        "Land Improvements": 20, "Software": 3, "Intangible Asset (e.g., Patent)": 10
     },
     "IFRS": {
-        "Building": 30,
-        "Vehicle": 7,
-        "Machinery": 8,
-        "Furniture": 5,
-        "Computer Equipment": 4,
-        "Office Equipment": 5,
-        "Leasehold Improvements": 10,
-        "Land Improvements": 20,
-        "Software": 5,
-        "Intangible Asset (e.g., Patent)": 8
+        "Building": 30, "Vehicle": 7, "Machinery": 8, "Furniture": 5,
+        "Computer Equipment": 4, "Office Equipment": 5, "Leasehold Improvements": 10,
+        "Land Improvements": 20, "Software": 5, "Intangible Asset (e.g., Patent)": 8
     },
     "Indian GAAP": {
-        "Building": 30,
-        "Vehicle": 8,
-        "Machinery": 10,
-        "Furniture": 6,
-        "Computer Equipment": 3,
-        "Office Equipment": 5,
-        "Leasehold Improvements": 10,
-        "Land Improvements": 15,
-        "Software": 6,
-        "Intangible Asset (e.g., Patent)": 10
+        "Building": 30, "Vehicle": 8, "Machinery": 10, "Furniture": 6,
+        "Computer Equipment": 3, "Office Equipment": 5, "Leasehold Improvements": 10,
+        "Land Improvements": 15, "Software": 6, "Intangible Asset (e.g., Patent)": 10
     }
 }
 
@@ -97,41 +76,56 @@ DEPRECIATION_METHODS = [
     "Sum-of-the-Years’ Digits", "Units of Production", "MACRS (US Tax)", "Custom (Manual Rate)"
 ]
 
-# ------------------ Streamlit App ------------------
-st.set_page_config(page_title="Depreciation Calculator", layout="centered")
+# ------------------ Streamlit UI ------------------
+st.set_page_config(page_title="📉 Depreciation Calculator", layout="centered")
 st.title("📉 Depreciation Schedule Builder")
+st.markdown("This tool helps you calculate **monthly or yearly depreciation schedules** based on various GAAP standards.")
 
-gaap = st.selectbox("Select GAAP", GAAP_OPTIONS)
-asset_type = st.selectbox("Asset Type", ASSET_TYPES)
-method = st.selectbox("Depreciation Method", DEPRECIATION_METHODS)
-mode = st.radio("Calculation Mode", ["Yearly", "Monthly"])
+with st.form("depreciation_form"):
+    col1, col2 = st.columns(2)
+    with col1:
+        gaap = st.selectbox("📘 Select GAAP", GAAP_OPTIONS, help="Choose the accounting standard to apply.")
+        asset_type = st.selectbox("🏗️ Asset Type", ASSET_TYPES)
+        method = st.selectbox("🧮 Depreciation Method", DEPRECIATION_METHODS)
+    with col2:
+        mode = st.radio("📆 Calculation Mode", ["Yearly", "Monthly"])
+        cost = st.number_input("💰 Asset Cost", min_value=0.0, value=10000.0)
+        salvage = st.number_input("♻️ Salvage Value", min_value=0.0, value=1000.0)
 
-cost = st.number_input("Asset Cost", min_value=0.0, value=10000.0)
-salvage = st.number_input("Salvage Value", min_value=0.0, value=1000.0)
+    default_life = get_useful_life(gaap, asset_type)
+    life_years = st.number_input("📅 Useful Life (Years)", min_value=1, value=default_life or 5)
 
-default_life = get_useful_life(gaap, asset_type)
-life_years = st.number_input("Useful Life (Years)", min_value=1, value=default_life or 5)
+    start_date = st.date_input("📍 In-Service Date", value=date.today())
+    if mode == "Monthly":
+        end_date = st.date_input("🏁 End Date", value=start_date.replace(year=start_date.year + life_years))
 
-start_date = st.date_input("Asset In-Service Date", value=date.today())
+    submit = st.form_submit_button("📊 Generate Schedule")
 
-if mode == "Monthly":
-    end_date = st.date_input("End of Depreciation Period", value=start_date.replace(year=start_date.year + life_years))
-
-# ------------------ Depreciation Logic Trigger ------------------
-if st.button("Generate Depreciation Schedule"):
+if submit:
     if method == "Straight-Line":
         if mode == "Monthly":
             schedule = straight_line_monthly(cost, salvage, start_date, end_date)
         else:
             schedule = straight_line_yearly(cost, salvage, life_years)
     else:
-        st.warning(f"The method '{method}' is not implemented yet. Showing placeholder schedule.")
-        schedule = [{"Period": f"Placeholder {i}", "Depreciation Expense": 0, "Accumulated Depreciation": 0, "Book Value": cost}
+        st.warning(f"⚠️ The method '{method}' is not implemented yet.")
+        schedule = [{"Period": f"Year {i}", "Depreciation Expense": 0,
+                     "Accumulated Depreciation": 0, "Book Value": cost}
                     for i in range(1, life_years + 1)]
 
     df = pd.DataFrame(schedule)
+    st.success("✅ Schedule generated successfully!")
     st.subheader("📋 Depreciation Schedule")
     st.dataframe(df, use_container_width=True)
 
+    st.subheader("📈 Summary")
+    total_dep = df["Depreciation Expense"].sum()
+    final_book = df.iloc[-1]["Book Value"]
+    st.markdown(f"""
+    - **Total Depreciation**: `${total_dep:,.2f}`  
+    - **Final Book Value**: `${final_book:,.2f}`  
+    - **Total Periods**: `{len(df)}`  
+    """)
+
     csv = df.to_csv(index=False).encode()
-    st.download_button("Download CSV", data=csv, file_name="depreciation_schedule.csv")
+    st.download_button("⬇️ Download CSV", data=csv, file_name="depreciation_schedule.csv")
