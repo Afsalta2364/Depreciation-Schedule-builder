@@ -76,7 +76,7 @@ DEPRECIATION_METHODS = [
     "Sum-of-the-Years’ Digits", "Units of Production", "MACRS (US Tax)", "Custom (Manual Rate)"
 ]
 
-# ------------------ Streamlit UI ------------------
+# ------------------ Streamlit App ------------------
 st.set_page_config(page_title="📉 Depreciation Calculator", layout="centered")
 st.title("📉 Depreciation Schedule Builder")
 st.markdown("This tool helps you calculate **monthly or yearly depreciation schedules** based on various GAAP standards.")
@@ -85,26 +85,44 @@ with st.form("depreciation_form"):
     col1, col2 = st.columns(2)
     with col1:
         gaap = st.selectbox("📘 Select GAAP", GAAP_OPTIONS, help="Choose the accounting standard to apply.")
-        asset_type = st.selectbox("🏗️ Asset Type", ASSET_TYPES)
+        asset_type = st.selectbox("🏗️ Asset Type", ASSET_TYPES, help="This will affect the suggested useful life.")
         method = st.selectbox("🧮 Depreciation Method", DEPRECIATION_METHODS)
     with col2:
         mode = st.radio("📆 Calculation Mode", ["Yearly", "Monthly"])
         cost = st.number_input("💰 Asset Cost", min_value=0.0, value=10000.0)
         salvage = st.number_input("♻️ Salvage Value", min_value=0.0, value=1000.0)
 
+    # Useful life logic
     default_life = get_useful_life(gaap, asset_type)
-    life_years = st.number_input("📅 Useful Life (Years)", min_value=1, value=default_life or 5)
+    reset_life = st.checkbox("🔄 Reset useful life to default?", value=True)
+
+    if reset_life and default_life:
+        life_years = default_life
+        st.markdown(f"📌 Using GAAP default life: **{default_life} years**")
+    else:
+        life_years = st.number_input("📅 Useful Life (Years)", min_value=1, value=default_life or 5, key="life_override")
 
     start_date = st.date_input("📍 In-Service Date", value=date.today())
+    end_date = None
+
     if mode == "Monthly":
-        end_date = st.date_input("🏁 End Date", value=start_date.replace(year=start_date.year + life_years))
+        auto_end = st.checkbox("🧮 Auto-calculate End Date", value=True)
+        if auto_end:
+            end_date = start_date.replace(year=start_date.year + life_years)
+            st.markdown(f"📆 Auto end date: **{end_date.strftime('%Y-%m-%d')}**")
+        else:
+            end_date = st.date_input("🏁 Enter Custom End Date")
 
     submit = st.form_submit_button("📊 Generate Schedule")
 
+# ------------------ Schedule Output ------------------
 if submit:
     if method == "Straight-Line":
         if mode == "Monthly":
-            schedule = straight_line_monthly(cost, salvage, start_date, end_date)
+            if end_date is None:
+                st.error("Please provide an end date.")
+            else:
+                schedule = straight_line_monthly(cost, salvage, start_date, end_date)
         else:
             schedule = straight_line_yearly(cost, salvage, life_years)
     else:
@@ -118,14 +136,16 @@ if submit:
     st.subheader("📋 Depreciation Schedule")
     st.dataframe(df, use_container_width=True)
 
-    st.subheader("📈 Summary")
+    # Summary
     total_dep = df["Depreciation Expense"].sum()
     final_book = df.iloc[-1]["Book Value"]
+    st.subheader("📈 Summary")
     st.markdown(f"""
     - **Total Depreciation**: `${total_dep:,.2f}`  
     - **Final Book Value**: `${final_book:,.2f}`  
     - **Total Periods**: `{len(df)}`  
     """)
 
+    # Download
     csv = df.to_csv(index=False).encode()
     st.download_button("⬇️ Download CSV", data=csv, file_name="depreciation_schedule.csv")
