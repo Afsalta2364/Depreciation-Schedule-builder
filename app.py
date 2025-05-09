@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import date
 from gaap_rules import get_useful_life
-from depreciation_methods import straight_line_monthly, straight_line_yearly
+from depreciation-methods import straight_line_monthly, straight_line_yearly
 
 st.title("Depreciation Calculator")
 
