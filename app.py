@@ -30,7 +30,6 @@ def straight_line_yearly(cost, salvage, life_years):
     annual = (cost - salvage) / life_years
     acc = 0
     schedule = []
-
     for year in range(1, life_years + 1):
         acc += annual
         book_value = cost - acc
@@ -48,7 +47,6 @@ def straight_line_monthly(cost, salvage, start_date, end_date):
     acc = 0
     schedule = []
     current = start_date
-
     for _ in range(months):
         acc += monthly
         book_value = cost - acc
@@ -59,7 +57,6 @@ def straight_line_monthly(cost, salvage, start_date, end_date):
             "Book Value": round(book_value, 2)
         })
         current += relativedelta(months=1)
-
     return schedule
 
 # ------------------ UI Constants ------------------
@@ -92,13 +89,20 @@ with st.form("depreciation_form"):
         cost = st.number_input("💰 Asset Cost", min_value=0.0, value=10000.0)
         salvage = st.number_input("♻️ Salvage Value", min_value=0.0, value=1000.0)
 
+    # ✅ Auto-reset logic for useful life
     default_life = get_useful_life(gaap, asset_type)
-    reset_life = st.checkbox("🔄 Reset useful life to default?", value=True)
+    life_key = f"{gaap}_{asset_type}"
 
-    if reset_life and default_life:
-        life_years = default_life
-    else:
-        life_years = st.number_input("📅 Useful Life (Years)", min_value=1, value=default_life or 5, key="life_override")
+    if "life_key_prev" not in st.session_state:
+        st.session_state.life_key_prev = life_key
+    if "life_input" not in st.session_state:
+        st.session_state.life_input = default_life or 5
+
+    if life_key != st.session_state.life_key_prev:
+        st.session_state.life_input = default_life or 5
+        st.session_state.life_key_prev = life_key
+
+    life_years = st.number_input("📅 Useful Life (Years)", min_value=1, value=st.session_state.life_input, key="life_input")
 
     start_date = st.date_input("📍 In-Service Date", value=date.today())
 
@@ -123,7 +127,7 @@ if submit:
         else:
             schedule = straight_line_yearly(cost, salvage, life_years)
     else:
-        st.warning(f"⚠️ The method '{method}' is not implemented yet. Displaying placeholder schedule.")
+        st.warning(f"⚠️ The method '{method}' is not implemented yet. Showing placeholder schedule.")
         schedule = [{"Period": f"Year {i}", "Depreciation Expense": 0,
                      "Accumulated Depreciation": 0, "Book Value": cost}
                     for i in range(1, life_years + 1)]
