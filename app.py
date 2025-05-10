@@ -10,7 +10,8 @@ def generate_months(start_date, months):
 def straight_line_monthly_row(asset_name, cost, salvage, start_date, useful_life):
     months = useful_life * 12
     monthly_dep = (cost - salvage) / months
-    month_labels = [d.strftime("%b %Y") for d in generate_months(start_date, months)]
+    month_dates = generate_months(start_date, months)
+    month_labels = [d.strftime("%b %Y") for d in month_dates]
     dep_values = [round(monthly_dep, 2)] * months
     total = round(monthly_dep * months, 2)
     row = dict(zip(month_labels, dep_values))
@@ -73,8 +74,13 @@ if st.button("📊 Generate Monthly Schedules"):
         all_rows.append(row)
 
     df = pd.DataFrame(all_rows).set_index("Asset")
-    df = df.fillna(0)
 
+    # Sort month columns chronologically
+    month_cols = [col for col in df.columns if col != "Total Depreciation"]
+    sorted_months = sorted(month_cols, key=lambda d: pd.to_datetime(d, format="%b %Y"))
+    df = df[sorted_months + ["Total Depreciation"]]
+
+    # Display results
     st.success("✅ Monthly depreciation schedules generated!")
     st.dataframe(df, use_container_width=True)
 
@@ -83,4 +89,4 @@ if st.button("📊 Generate Monthly Schedules"):
     st.markdown(f"- **Total Depreciation (All Assets):** `${df['Total Depreciation'].sum():,.2f}`")
 
     csv = df.reset_index().to_csv(index=False).encode()
-    st.download_button("⬇️ Download CSV", data=csv, file_name="monthly_wide_depreciation.csv")
+    st.download_button("⬇️ Download CSV", data=csv, file_name="monthly_depreciation_schedule.csv")
