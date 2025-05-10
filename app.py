@@ -89,7 +89,7 @@ with st.form("depreciation_form"):
         cost = st.number_input("💰 Asset Cost", min_value=0.0, value=10000.0)
         salvage = st.number_input("♻️ Salvage Value", min_value=0.0, value=1000.0)
 
-    # Get useful life logic
+    # Useful life logic with session persistence
     default_life = get_useful_life(gaap, asset_type)
     life_key = f"{gaap}_{asset_type}"
 
@@ -114,6 +114,7 @@ with st.form("depreciation_form"):
         else:
             end_date = st.date_input("🏁 Enter Custom End Date")
 
+    # ✅ Correct placement of submit button
     submit = st.form_submit_button("📊 Generate Schedule")
 
 # ------------------ Depreciation Schedule Output ------------------
