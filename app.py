@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import date
 from dateutil.relativedelta import relativedelta
 
-# ------------------ GAAP Logic ------------------
+# ------------------ GAAP Rules ------------------
 GAAP_USEFUL_LIVES = {
     "US GAAP": {
         "Building": 40, "Vehicle": 5, "Machinery": 10, "Furniture": 7,
@@ -25,7 +25,6 @@ GAAP_USEFUL_LIVES = {
 def get_useful_life(gaap, asset_type):
     return GAAP_USEFUL_LIVES.get(gaap, {}).get(asset_type, None)
 
-# ------------------ Depreciation Logic ------------------
 def straight_line_yearly(cost, salvage, life_years):
     annual = (cost - salvage) / life_years
     acc = 0
@@ -59,65 +58,53 @@ def straight_line_monthly(cost, salvage, start_date, end_date):
         current += relativedelta(months=1)
     return schedule
 
-# ------------------ UI Constants ------------------
+# ------------------ UI ------------------
+st.set_page_config(page_title="📉 Depreciation Calculator", layout="centered")
+st.title("📉 Depreciation Schedule Builder")
+
 ASSET_TYPES = [
     "Building", "Vehicle", "Machinery", "Furniture", "Computer Equipment",
     "Office Equipment", "Leasehold Improvements", "Land Improvements",
     "Software", "Intangible Asset (e.g., Patent)"
 ]
-
 GAAP_OPTIONS = ["US GAAP", "IFRS", "Indian GAAP", "UK GAAP", "Canadian GAAP", "Custom GAAP"]
 
 DEPRECIATION_METHODS = [
-    "Straight-Line", "Double Declining Balance", "150% Declining Balance",
-    "Sum-of-the-Years’ Digits", "Units of Production", "MACRS (US Tax)", "Custom (Manual Rate)"
+    "Straight-Line", "Double Declining Balance", "Sum-of-the-Years’ Digits",
+    "Units of Production", "MACRS (US Tax)", "Custom (Manual Rate)"
 ]
 
-# ------------------ Streamlit UI ------------------
-st.set_page_config(page_title="📉 Depreciation Calculator", layout="centered")
-st.title("📉 Depreciation Schedule Builder")
-st.markdown("This tool calculates **monthly or yearly depreciation schedules** based on selected accounting standards (GAAP).")
+# Live GAAP + Asset selection
+gaap = st.selectbox("📘 Select GAAP", GAAP_OPTIONS)
+asset_type = st.selectbox("🏗️ Asset Type", ASSET_TYPES)
 
+# Reactive useful life
+default_life = get_useful_life(gaap, asset_type)
+useful_life = st.number_input(
+    f"📅 Useful Life (Years) (Default: {default_life or 'N/A'})",
+    min_value=1,
+    value=default_life or 5
+)
+
+# Form for inputs
 with st.form("depreciation_form"):
-    col1, col2 = st.columns(2)
-    with col1:
-        gaap = st.selectbox("📘 Select GAAP", GAAP_OPTIONS)
-        asset_type = st.selectbox("🏗️ Asset Type", ASSET_TYPES)
-        method = st.selectbox("🧮 Depreciation Method", DEPRECIATION_METHODS)
-    with col2:
-        mode = st.radio("📆 Calculation Mode", ["Yearly", "Monthly"])
-        cost = st.number_input("💰 Asset Cost", min_value=0.0, value=10000.0)
-        salvage = st.number_input("♻️ Salvage Value", min_value=0.0, value=1000.0)
-
-    # Useful life logic with session persistence
-    default_life = get_useful_life(gaap, asset_type)
-    life_key = f"{gaap}_{asset_type}"
-
-    if "life_key" not in st.session_state or st.session_state.life_key != life_key:
-        st.session_state.life_key = life_key
-        st.session_state.useful_life = default_life or 5
-
-    life_years = st.number_input(
-        f"📅 Useful Life (Years) (Default: {default_life or 'N/A'})",
-        min_value=1,
-        value=st.session_state.useful_life,
-        key="useful_life"
-    )
-
+    method = st.selectbox("🧮 Depreciation Method", DEPRECIATION_METHODS)
+    mode = st.radio("📆 Calculation Mode", ["Yearly", "Monthly"])
+    cost = st.number_input("💰 Asset Cost", min_value=0.0, value=10000.0)
+    salvage = st.number_input("♻️ Salvage Value", min_value=0.0, value=1000.0)
     start_date = st.date_input("📍 In-Service Date", value=date.today())
 
     end_date = None
     if mode == "Monthly":
         auto_end = st.checkbox("🧮 Auto-calculate End Date", value=True)
         if auto_end:
-            end_date = start_date.replace(year=start_date.year + life_years)
+            end_date = start_date.replace(year=start_date.year + useful_life)
         else:
             end_date = st.date_input("🏁 Enter Custom End Date")
 
-    # ✅ Correct placement of submit button
     submit = st.form_submit_button("📊 Generate Schedule")
 
-# ------------------ Depreciation Schedule Output ------------------
+# ------------------ Output ------------------
 if submit:
     if method == "Straight-Line":
         if mode == "Monthly":
@@ -126,12 +113,12 @@ if submit:
             else:
                 schedule = straight_line_monthly(cost, salvage, start_date, end_date)
         else:
-            schedule = straight_line_yearly(cost, salvage, life_years)
+            schedule = straight_line_yearly(cost, salvage, useful_life)
     else:
-        st.warning(f"⚠️ '{method}' not yet implemented. Showing placeholder data.")
+        st.warning(f"⚠️ '{method}' not yet implemented. Showing placeholder.")
         schedule = [{"Period": f"Year {i}", "Depreciation Expense": 0,
                      "Accumulated Depreciation": 0, "Book Value": cost}
-                    for i in range(1, life_years + 1)]
+                    for i in range(1, useful_life + 1)]
 
     df = pd.DataFrame(schedule)
     st.success("✅ Schedule generated successfully!")
@@ -140,6 +127,7 @@ if submit:
 
     st.subheader("📈 Summary")
     st.markdown(f"""
+    - **Useful Life Used**: `{useful_life}` years  
     - **Total Depreciation**: `${df['Depreciation Expense'].sum():,.2f}`  
     - **Final Book Value**: `${df.iloc[-1]['Book Value']:,.2f}`  
     - **Total Periods**: `{len(df)}`  
