@@ -44,8 +44,9 @@ GAAP_USEFUL_LIVES = {
 # ------------------ UI ------------------
 st.set_page_config(page_title="📊 Depreciation Calculator", layout="wide")
 
-st.title("📊 Depreciation Schedule Builder")
-st.markdown("Design and download **monthly or yearly depreciation schedules** for multiple assets with GAAP-specific logic.")
+# Centered title using HTML
+st.markdown("<h1 style='text-align: center;'>📊 Depreciation Schedule Builder</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center;'>Design and download <b>monthly or yearly depreciation schedules</b> for multiple assets with GAAP-specific logic.</p>", unsafe_allow_html=True)
 st.divider()
 
 mode = st.radio("📆 Select Schedule Mode", ["Monthly", "Yearly"], horizontal=True)
@@ -99,11 +100,11 @@ if st.button("📊 Generate Depreciation Schedule"):
     df = df[sorted_cols + ["Total Depreciation"]]
 
     # ------------------ Display ------------------
-    st.subheader("📋 Full Depreciation Schedule")
+    st.markdown("<h3 style='text-align: center;'>📋 Full Depreciation Schedule</h3>", unsafe_allow_html=True)
     st.dataframe(df, use_container_width=True)
 
     # ------------------ Summary ------------------
-    st.subheader("📈 Asset Summary Overview")
+    st.markdown("<h3 style='text-align: center;'>📈 Asset Summary Overview</h3>", unsafe_allow_html=True)
     last_period_col = df.columns[-2] if "Total Depreciation" in df.columns else df.columns[-1]
 
     summary_data = []
@@ -120,11 +121,8 @@ if st.button("📊 Generate Depreciation Schedule"):
     st.dataframe(summary_df, use_container_width=True)
 
     # Totals
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown(f"**🧮 Total Assets:** `{len(df)}`")
-    with col2:
-        st.markdown(f"**💵 Total Depreciation:** `${df['Total Depreciation'].sum():,.2f}`")
+    st.markdown("<div style='text-align:center'><b>🧮 Total Assets:</b> {}</div>".format(len(df)), unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center'><b>💵 Total Depreciation:</b> ${:,.2f}</div>".format(df['Total Depreciation'].sum()), unsafe_allow_html=True)
 
     # Export
     csv = df.reset_index().to_csv(index=False).encode()
