@@ -81,27 +81,27 @@ st.markdown("This tool calculates **monthly or yearly depreciation schedules** b
 with st.form("depreciation_form"):
     col1, col2 = st.columns(2)
     with col1:
-        gaap = st.selectbox("📘 Select GAAP", GAAP_OPTIONS, help="Choose the accounting standard to apply.")
-        asset_type = st.selectbox("🏗️ Asset Type", ASSET_TYPES, help="Affects the suggested useful life.")
+        gaap = st.selectbox("📘 Select GAAP", GAAP_OPTIONS)
+        asset_type = st.selectbox("🏗️ Asset Type", ASSET_TYPES)
         method = st.selectbox("🧮 Depreciation Method", DEPRECIATION_METHODS)
     with col2:
         mode = st.radio("📆 Calculation Mode", ["Yearly", "Monthly"])
         cost = st.number_input("💰 Asset Cost", min_value=0.0, value=10000.0)
         salvage = st.number_input("♻️ Salvage Value", min_value=0.0, value=1000.0)
 
-    # ✅ Auto-reset logic for useful life with session tracking
+    # Get useful life logic
     default_life = get_useful_life(gaap, asset_type)
     life_key = f"{gaap}_{asset_type}"
 
     if "life_key" not in st.session_state or st.session_state.life_key != life_key:
         st.session_state.life_key = life_key
-        st.session_state.life_input = default_life or 5
+        st.session_state.useful_life = default_life or 5
 
     life_years = st.number_input(
         f"📅 Useful Life (Years) (Default: {default_life or 'N/A'})",
         min_value=1,
-        value=st.session_state.life_input,
-        key="life_input"
+        value=st.session_state.useful_life,
+        key="useful_life"
     )
 
     start_date = st.date_input("📍 In-Service Date", value=date.today())
@@ -116,18 +116,18 @@ with st.form("depreciation_form"):
 
     submit = st.form_submit_button("📊 Generate Schedule")
 
-# ------------------ Calculation and Output ------------------
+# ------------------ Depreciation Schedule Output ------------------
 if submit:
     if method == "Straight-Line":
         if mode == "Monthly":
-            if end_date is None:
+            if not end_date:
                 st.error("Please provide an end date.")
             else:
                 schedule = straight_line_monthly(cost, salvage, start_date, end_date)
         else:
             schedule = straight_line_yearly(cost, salvage, life_years)
     else:
-        st.warning(f"⚠️ The method '{method}' is not implemented yet. Showing placeholder schedule.")
+        st.warning(f"⚠️ '{method}' not yet implemented. Showing placeholder data.")
         schedule = [{"Period": f"Year {i}", "Depreciation Expense": 0,
                      "Accumulated Depreciation": 0, "Book Value": cost}
                     for i in range(1, life_years + 1)]
@@ -138,11 +138,9 @@ if submit:
     st.dataframe(df, use_container_width=True)
 
     st.subheader("📈 Summary")
-    total_dep = df["Depreciation Expense"].sum()
-    final_book = df.iloc[-1]["Book Value"]
     st.markdown(f"""
-    - **Total Depreciation**: `${total_dep:,.2f}`  
-    - **Final Book Value**: `${final_book:,.2f}`  
+    - **Total Depreciation**: `${df['Depreciation Expense'].sum():,.2f}`  
+    - **Final Book Value**: `${df.iloc[-1]['Book Value']:,.2f}`  
     - **Total Periods**: `{len(df)}`  
     """)
 
