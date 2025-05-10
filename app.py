@@ -93,13 +93,32 @@ if st.button("📊 Generate Schedules"):
     sorted_cols = sorted(period_cols, key=lambda d: pd.to_datetime(d, format=sort_fmt))
     df = df[sorted_cols + ["Total Depreciation"]]
 
-    # Display
+    # ------------------ Display Results ------------------
     st.success("✅ Depreciation schedules generated!")
     st.dataframe(df, use_container_width=True)
 
+    # ------------------ Summary Table ------------------
     st.subheader("📈 Summary")
+
+    last_period_col = df.columns[-2] if "Total Depreciation" in df.columns else df.columns[-1]
+    summary_data = []
+
+    for asset, row in df.iterrows():
+        asset_input = next(a for a in asset_inputs if a["name"] == asset)
+        summary_data.append({
+            "Asset": asset,
+            "Useful Life (Years)": asset_input["useful_life"],
+            "Total Depreciation": row["Total Depreciation"],
+            "Final Period": last_period_col
+        })
+
+    summary_df = pd.DataFrame(summary_data)
+    st.dataframe(summary_df, use_container_width=True)
+
+    # Overall Totals
     st.markdown(f"- **Total Assets:** {len(df)}")
     st.markdown(f"- **Total Depreciation (All Assets):** `${df['Total Depreciation'].sum():,.2f}`")
 
+    # Export
     csv = df.reset_index().to_csv(index=False).encode()
     st.download_button("⬇️ Download CSV", data=csv, file_name=f"{mode.lower()}_depreciation_schedule.csv")
