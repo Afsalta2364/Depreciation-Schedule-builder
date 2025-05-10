@@ -4,17 +4,26 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 
 # ------------------ Depreciation Logic ------------------
-def generate_months(start_date, months):
-    return [start_date + relativedelta(months=i) for i in range(months)]
+def generate_periods(start_date, months, mode):
+    if mode == "Monthly":
+        return [start_date + relativedelta(months=i) for i in range(months)]
+    else:  # Yearly
+        return [start_date + relativedelta(years=i) for i in range(months // 12)]
 
-def straight_line_monthly_row(asset_name, cost, salvage, start_date, useful_life):
+def depreciation_row(asset_name, cost, salvage, start_date, useful_life, mode):
     months = useful_life * 12
-    monthly_dep = (cost - salvage) / months
-    month_dates = generate_months(start_date, months)
-    month_labels = [d.strftime("%b %Y") for d in month_dates]
-    dep_values = [round(monthly_dep, 2)] * months
-    total = round(monthly_dep * months, 2)
-    row = dict(zip(month_labels, dep_values))
+    periods = generate_periods(start_date, months, mode)
+
+    if mode == "Monthly":
+        dep_per_period = (cost - salvage) / months
+        labels = [p.strftime("%b %Y") for p in periods]
+    else:
+        dep_per_period = (cost - salvage) / useful_life
+        labels = [p.strftime("%Y") for p in periods]
+
+    dep_values = [round(dep_per_period, 2)] * len(labels)
+    total = round(sum(dep_values), 2)
+    row = dict(zip(labels, dep_values))
     row["Asset"] = asset_name
     row["Total Depreciation"] = total
     return row
@@ -33,11 +42,13 @@ GAAP_USEFUL_LIVES = {
 }
 
 # ------------------ UI ------------------
-st.set_page_config("📆 Monthly Depreciation - Multi Asset")
-st.title("📆 Monthwise Depreciation Schedule (Wide Format)")
+st.set_page_config("📆 Depreciation Schedule - Multi Asset")
+st.title("📆 Depreciation Schedule (Wide Format)")
+
+# 📌 Choose view mode
+mode = st.radio("Select Schedule Mode:", ["Monthly", "Yearly"], horizontal=True)
 
 num_assets = st.number_input("How many assets to add?", min_value=1, max_value=10, value=2, step=1)
-
 asset_inputs = []
 
 for i in range(num_assets):
@@ -60,28 +71,30 @@ for i in range(num_assets):
         })
 
 # ------------------ Generate Schedule ------------------
-if st.button("📊 Generate Monthly Schedules"):
+if st.button("📊 Generate Schedules"):
     all_rows = []
 
     for asset in asset_inputs:
-        row = straight_line_monthly_row(
+        row = depreciation_row(
             asset_name=asset["name"],
             cost=asset["cost"],
             salvage=asset["salvage"],
             start_date=asset["start_date"],
-            useful_life=asset["useful_life"]
+            useful_life=asset["useful_life"],
+            mode=mode
         )
         all_rows.append(row)
 
     df = pd.DataFrame(all_rows).set_index("Asset")
 
-    # Sort month columns chronologically
-    month_cols = [col for col in df.columns if col != "Total Depreciation"]
-    sorted_months = sorted(month_cols, key=lambda d: pd.to_datetime(d, format="%b %Y"))
-    df = df[sorted_months + ["Total Depreciation"]]
+    # Sort period columns chronologically
+    period_cols = [col for col in df.columns if col != "Total Depreciation"]
+    sort_fmt = "%b %Y" if mode == "Monthly" else "%Y"
+    sorted_cols = sorted(period_cols, key=lambda d: pd.to_datetime(d, format=sort_fmt))
+    df = df[sorted_cols + ["Total Depreciation"]]
 
-    # Display results
-    st.success("✅ Monthly depreciation schedules generated!")
+    # Display
+    st.success("✅ Depreciation schedules generated!")
     st.dataframe(df, use_container_width=True)
 
     st.subheader("📈 Summary")
@@ -89,4 +102,4 @@ if st.button("📊 Generate Monthly Schedules"):
     st.markdown(f"- **Total Depreciation (All Assets):** `${df['Total Depreciation'].sum():,.2f}`")
 
     csv = df.reset_index().to_csv(index=False).encode()
-    st.download_button("⬇️ Download CSV", data=csv, file_name="monthly_depreciation_schedule.csv")
+    st.download_button("⬇️ Download CSV", data=csv, file_name=f"{mode.lower()}_depreciation_schedule.csv")
