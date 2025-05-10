@@ -89,20 +89,20 @@ with st.form("depreciation_form"):
         cost = st.number_input("💰 Asset Cost", min_value=0.0, value=10000.0)
         salvage = st.number_input("♻️ Salvage Value", min_value=0.0, value=1000.0)
 
-    # ✅ Auto-reset logic for useful life
+    # ✅ Auto-reset logic for useful life with session tracking
     default_life = get_useful_life(gaap, asset_type)
     life_key = f"{gaap}_{asset_type}"
 
-    if "life_key_prev" not in st.session_state:
-        st.session_state.life_key_prev = life_key
-    if "life_input" not in st.session_state:
+    if "life_key" not in st.session_state or st.session_state.life_key != life_key:
+        st.session_state.life_key = life_key
         st.session_state.life_input = default_life or 5
 
-    if life_key != st.session_state.life_key_prev:
-        st.session_state.life_input = default_life or 5
-        st.session_state.life_key_prev = life_key
-
-    life_years = st.number_input("📅 Useful Life (Years)", min_value=1, value=st.session_state.life_input, key="life_input")
+    life_years = st.number_input(
+        f"📅 Useful Life (Years) (Default: {default_life or 'N/A'})",
+        min_value=1,
+        value=st.session_state.life_input,
+        key="life_input"
+    )
 
     start_date = st.date_input("📍 In-Service Date", value=date.today())
 
