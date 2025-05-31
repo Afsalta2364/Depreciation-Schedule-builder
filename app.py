@@ -184,72 +184,105 @@ if st.button("📊 Generate Depreciation Schedule", type="primary", use_containe
             "💼 Net Value & Grand Totals"
         ])
 
-        # Common currency formatting for dataframes
         currency_format_string = f"{currency_symbol}{{:, .2f}}"
         
-        with tab1: # Full Depreciation Schedule
+        with tab1:
             st.markdown(f"<h3 style='text-align: center;'>Full Depreciation Schedule (up to {provision_as_of_date_input.strftime('%d %b %Y')})</h3>", unsafe_allow_html=True)
+            
             main_schedule_df_full = pd.DataFrame(processed_asset_data_rows)
+            
             schedule_display_cols = ["Asset"] + \
                                     [col for col in main_schedule_df_full.columns if col not in ["Asset", "Total Depreciation", "Original Cost", "Original Salvage"]] + \
                                     ["Total Depreciation"]
             main_schedule_df_display = main_schedule_df_full.reindex(columns=schedule_display_cols).copy()
-            if not main_schedule_df_display.empty: # Ensure 'Asset' column exists before setting index
+
+            if main_schedule_df_display.empty or "Asset" not in main_schedule_df_display.columns:
+                st.info("No data available to construct the depreciation schedule.")
+            else:
                 main_schedule_df_display = main_schedule_df_display.set_index("Asset")
 
-            period_cols_in_schedule = [col for col in main_schedule_df_display.columns if col != "Total Depreciation"]
-            sorted_period_cols = []
-            if period_cols_in_schedule:
-                sort_fmt = "%b %Y" if mode == "Monthly" else "%Y"
-                valid_date_strings = [p for p in period_cols_in_schedule if isinstance(p, str)]
-                try:
-                    sorted_period_cols = sorted(
-                        valid_date_strings, 
-                        key=lambda d: pd.to_datetime(d, format=sort_fmt, errors='coerce')
-                    )
-                    sorted_period_cols = [p for p in sorted_period_cols if pd.notna(pd.to_datetime(p, format=sort_fmt, errors='coerce'))]
-                except ValueError: # Should be caught by errors='coerce' but as a fallback
-                    sorted_period_cols = valid_date_strings # Keep unsorted if error
-            
-            final_schedule_columns_order = sorted_period_cols + (["Total Depreciation"] if "Total Depreciation" in main_schedule_df_display.columns else [])
-            
-            if final_schedule_columns_order and not main_schedule_df_display.empty:
-                main_schedule_df_display = main_schedule_df_display[final_schedule_columns_order]
-                
-                style_dict_schedule = {
-                    col: currency_format_string 
-                    for col in main_schedule_df_display.columns 
-                    if col == "Total Depreciation" or col in sorted_period_cols
-                }
-                
-                # MODIFIED LINE: Removed precision=2 from .format()
-                st.dataframe(
-                    main_schedule_df_display.style.format(style_dict_schedule), 
-                    use_container_width=True
-                )
+                period_cols_in_schedule = [col for col in main_schedule_df_display.columns if col != "Total Depreciation"]
+                sorted_period_cols = []
 
-                st.markdown("---")
-                st.markdown("<h4 style='text-align: center;'>Schedule Totals</h4>", unsafe_allow_html=True)
-                total_assets_in_schedule_display = len(main_schedule_df_display)
-                grand_total_accum_depr_schedule = main_schedule_df_display['Total Depreciation'].sum() if 'Total Depreciation' in main_schedule_df_display.columns and not main_schedule_df_display.empty else 0.0
-                
-                sched_total_col1, sched_total_col2 = st.columns(2)
-                with sched_total_col1:
-                    st.metric(label="Assets in Schedule", value=total_assets_in_schedule_display)
-                with sched_total_col2:
-                    st.metric(label="Total Depreciation (Schedule)", value=f"{currency_symbol}{grand_total_accum_depr_schedule:,.2f}")
-                
-                csv_export_data = main_schedule_df_display.reset_index().to_csv(index=False, float_format='%.2f').encode('utf-8')
-                st.download_button(
-                    label="⬇️ Download Schedule as CSV", data=csv_export_data,
-                    file_name=f"{mode.lower()}_dep_schedule_{provision_as_of_date_input.strftime('%Y%m%d')}.csv",
-                    mime="text/csv", use_container_width=True
-                )
-            elif main_schedule_df_display.empty and not processed_asset_data_rows:
-                st.info("No asset data available to display in the schedule.")
-            else: # main_schedule_df_display might be empty if all assets started after provision date, or no periods generated
-                 st.info("No depreciation periods to display based on the provision date and asset start dates.")
+                if period_cols_in_schedule:
+                    sort_fmt = "%b %Y" if mode == "Monthly" else "%Y"
+                    valid_date_strings = [p for p in period_cols_in_schedule if isinstance(p, str)]
+                    try:
+                        # Create a temporary series for sorting to handle NaT from coerce gracefully
+                        datetime_objects = [pd.to_datetime(d, format=sort_fmt, errors='coerce') for d in valid_date_strings]
+                        # Pair original strings with datetime objects, filter out NaTs, then sort by datetime
+                        sorted_pairs = sorted(
+                            [(s, dt) for s, dt in zip(valid_date_strings, datetime_objects) if pd.notna(dt)],
+                            key=lambda pair: pair[1]
+                        )
+                        sorted_period_cols = [pair[0] for pair in sorted_pairs]
+                        # Ensure these sorted columns actually exist in the DataFrame (they should if from valid_date_strings)
+                        sorted_period_cols = [col for col in sorted_period_cols if col in main_schedule_df_display.columns]
+                    except Exception as e: # Broad catch for any sorting issue
+                        st.warning(f"Could not sort period columns due to: {e}. Displaying unsorted.")
+                        sorted_period_cols = period_cols_in_schedule # Fallback to unsorted
 
+                final_schedule_columns_order = sorted_period_cols + (["Total Depreciation"] if "Total Depreciation" in main_schedule_df_display.columns else [])
+                
+                if final_schedule_columns_order and not main_schedule_df_display.empty:
+                    main_schedule_df_display = main_schedule_df_display[final_schedule_columns_order]
+
+                    # Columns to be formatted with currency
+                    cols_to_format_currency = [col for col in main_schedule_df_display.columns if col == "Total Depreciation" or col in sorted_period_cols]
+                    
+                    # Defensive: Ensure columns to be formatted are numeric
+                    for col in cols_to_format_currency:
+                        if col in main_schedule_df_display.columns:
+                            main_schedule_df_display[col] = pd.to_numeric(main_schedule_df_display[col], errors='coerce').fillna(0.0)
+                    
+                    style_dict_schedule = {
+                        col: currency_format_string 
+                        for col in cols_to_format_currency
+                        if col in main_schedule_df_display.columns # Final check
+                    }
+                    
+                    if not main_schedule_df_display.empty: # Check again before styling
+                        try:
+                            st.dataframe(
+                                main_schedule_df_display.style.format(style_dict_schedule),
+                                use_container_width=True
+                            )
+                        except Exception as e:
+                            st.error(f"⚠️ Error applying styles to the schedule DataFrame: {e}. Displaying unstyled data.")
+                            # For debugging, print info about the DataFrame just before styling attempt
+                            # st.write("DataFrame Info before styling error:")
+                            # st.write(main_schedule_df_display.info())
+                            # st.write("DataFrame Head before styling error:")
+                            # st.write(main_schedule_df_display.head())
+                            # st.write("Style Dictionary:")
+                            # st.write(style_dict_schedule)
+                            st.dataframe(main_schedule_df_display, use_container_width=True) # Fallback
+                    else:
+                        st.info("The schedule is empty after attempting to order columns.")
+
+                    # Schedule Totals and Download Button
+                    st.markdown("---")
+                    st.markdown("<h4 style='text-align: center;'>Schedule Totals</h4>", unsafe_allow_html=True)
+                    total_assets_in_schedule_display = len(main_schedule_df_display)
+                    grand_total_accum_depr_schedule = main_schedule_df_display['Total Depreciation'].sum() if 'Total Depreciation' in main_schedule_df_display.columns and not main_schedule_df_display.empty else 0.0
+                    
+                    sched_total_col1, sched_total_col2 = st.columns(2)
+                    with sched_total_col1:
+                        st.metric(label="Assets in Schedule", value=total_assets_in_schedule_display)
+                    with sched_total_col2:
+                        st.metric(label="Total Depreciation (Schedule)", value=f"{currency_symbol}{grand_total_accum_depr_schedule:,.2f}")
+                    
+                    if not main_schedule_df_display.empty:
+                        csv_export_data = main_schedule_df_display.reset_index().to_csv(index=False, float_format='%.2f').encode('utf-8')
+                        st.download_button(
+                            label="⬇️ Download Schedule as CSV", data=csv_export_data,
+                            file_name=f"{mode.lower()}_dep_schedule_{provision_as_of_date_input.strftime('%Y%m%d')}.csv",
+                            mime="text/csv", use_container_width=True
+                        )
+                elif main_schedule_df_display.empty and not processed_asset_data_rows:
+                    st.info("No asset data was configured to display in the schedule.")
+                else: 
+                    st.info("No depreciation periods to display based on the provision date and asset start dates for the configured assets.")
 
         with tab2: # Asset Summaries
             st.markdown("<h3 style='text-align: center;'>Asset Summary Overview</h3>", unsafe_allow_html=True)
