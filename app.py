@@ -151,7 +151,7 @@ def apply_custom_styling():
          border-left-color: var(--info-color, #3b82f6) !important;
          color: var(--info-text-color, #0c4a6e) !important;
     }
-     div[data-testid="stAlert"][data-testid="stNotification"] { /* Error (reddish) */
+     div[data-testid="stAlert"][data-testid="stNotificationErrorMessage"] { /* Error (reddish) */
          background-color: var(--error-background-color, #fee2e2) !important;
          border-left-color: var(--error-color, #ef4444) !important;
          color: var(--error-text-color, #7f1d1d) !important;
@@ -291,10 +291,10 @@ apply_custom_styling()
 st.markdown("""<div class="app-main-header"><h1>📊 Depreciation Pro</h1><p>Advanced Straight-Line Depreciation Schedules with GAAP Compliance</p></div>""", unsafe_allow_html=True)
 
 st.markdown("""<div class="app-section-header"><h2>⚙️ Global Configuration</h2></div>""", unsafe_allow_html=True)
-with st.container(border=True): # Using Streamlit's bordered container
+with st.container(border=True): 
     gc_col1, gc_col2, gc_col3 = st.columns(3)
     with gc_col1:
-        st.markdown("<h6>📆 Schedule Mode</h6>", unsafe_allow_html=True) # Smaller heading for inputs
+        st.markdown("<h6>📆 Schedule Mode</h6>", unsafe_allow_html=True) 
         mode = st.radio("Schedule Mode", ["Monthly", "Yearly"], horizontal=True, index=0, label_visibility="collapsed")
     with gc_col2:
         st.markdown("<h6>📅 Depreciation Provision As Of</h6>", unsafe_allow_html=True)
@@ -304,10 +304,7 @@ with st.container(border=True): # Using Streamlit's bordered container
         selected_currency_label = st.selectbox("Currency", list(CURRENCIES.keys()), index=0, label_visibility="collapsed")
         currency_symbol = CURRENCIES[selected_currency_label]
 
-# --- CRITICAL: Define currency_format_string GLOBALLY and CORRECTLY ---
-currency_format_string = f"{currency_symbol}{{:,2f}}"
-# --- UNCOMMENT FOR DEBUGGING ---
-# st.write(f"DEBUG - Global currency_format_string: '{currency_format_string}' (Symbol: '{currency_symbol}')")
+currency_format_string = f"{currency_symbol}{{:,2f}}" # Single definition
 
 st.markdown("""<div class="app-section-header"><h2>➕ Asset Configuration</h2></div>""", unsafe_allow_html=True)
 num_assets = st.number_input("Number of Assets to Configure", min_value=1, max_value=25, value=1, step=1, help="Specify how many assets you want to add to the schedule.")
@@ -316,14 +313,14 @@ asset_input_data_list = []
 for i in range(num_assets):
     with st.expander(f"📁 Asset #{i + 1}: Configuration Details", expanded=True if num_assets == 1 or i == 0 else False):
         asset_name = st.text_input(f"Asset Name", value=f"Asset_{i+1}", key=f"name_{i}", placeholder="e.g., Main Office Building, Company Vehicle X1")
-        grid = st.columns([2,2,1]) # Financial details, Parameters, Calculated base
+        grid = st.columns([2,2,1]) 
         with grid[0]:
-            st.markdown("---") # Visual Separator
+            st.markdown("<hr style='margin: 0.5rem 0;'>", unsafe_allow_html=True)
             st.markdown("<h6>💰 Financials</h6>", unsafe_allow_html=True)
             cost = st.number_input(f"Cost ({currency_symbol})", min_value=0.0, value=10000.0, step=100.0, format="%.2f", key=f"cost_{i}", help="Original purchase price of the asset")
             salvage_value_input = st.number_input(f"Salvage Value ({currency_symbol})", min_value=0.0, value=1000.0, step=100.0, format="%.2f", key=f"salvage_{i}", help="Expected residual value at the end of its useful life")
         with grid[1]:
-            st.markdown("---")
+            st.markdown("<hr style='margin: 0.5rem 0;'>", unsafe_allow_html=True)
             st.markdown("<h6>📘 Parameters</h6>", unsafe_allow_html=True)
             start_date_input = st.date_input(f"In-Service Date", value=date.today(), min_value=MIN_CALENDAR_DATE, max_value=MAX_CALENDAR_DATE, key=f"date_{i}", help="The date the asset was placed in service")
             gaap_standard = st.selectbox("GAAP Standard", list(GAAP_USEFUL_LIVES.keys()), key=f"gaap_{i}", help="Select accounting standard for default useful life")
@@ -331,11 +328,10 @@ for i in range(num_assets):
             default_useful_life = GAAP_USEFUL_LIVES.get(gaap_standard, {}).get(asset_type, 5)
             useful_life_years_input = st.number_input("Useful Life (Years)", min_value=1, value=default_useful_life, step=1, key=f"life_{i}", help=f"Suggested: {default_useful_life} years for {asset_type} under {gaap_standard}")
         with grid[2]:
-            st.markdown("---")
+            st.markdown("<hr style='margin: 0.5rem 0;'>", unsafe_allow_html=True)
             st.markdown("<h6>💡 Calculated</h6>", unsafe_allow_html=True)
             depreciable_base_display = max(0, cost - min(salvage_value_input, cost))
             st.metric(label="Depreciable Base", value=f"{currency_symbol}{depreciable_base_display:,.2f}")
-
 
         if salvage_value_input > cost:
             st.error(f"⚠️ Salvage value ({currency_symbol}{salvage_value_input:,.2f}) exceeds cost ({currency_symbol}{cost:,.2f}). Depreciable base is adjusted to {currency_symbol}0.00 for calculations.")
@@ -363,7 +359,7 @@ if st.button("🚀 Generate Depreciation Schedule", type="primary", use_containe
         if not processed_asset_data_rows: st.error("⚠️ No asset data processed. Configure assets or check dates.")
         else:
             st.markdown("""<div class="app-section-header"><h2>📊 Calculation Results</h2></div>""", unsafe_allow_html=True)
-            tab_titles = ["📋 Full Schedule", "📈 Asset Summaries", "💼 Net Value & Insights"] # Shorter tab titles
+            tab_titles = ["📋 Full Schedule", "📈 Asset Summaries", "💼 Net Value & Insights"] 
             tab1, tab2, tab3 = st.tabs(tab_titles)
             
             def get_dynamic_df_height(df, base_height=35, row_height=35, max_height=400, min_height=100):
@@ -392,7 +388,8 @@ if st.button("🚀 Generate Depreciation Schedule", type="primary", use_containe
                         df_display = df_display[final_cols_order]
                         cols_fmt_curr = [c for c in df_display.columns if c == "Total Depreciation" or c in sorted_p_cols]
                         for c in cols_fmt_curr: 
-                            if c in df_display.columns: df_display[c] = pd.to_numeric(df_display[c], errors='coerce').fillna(0.0)
+                            if c in df_display.columns: 
+                                df_display[c] = pd.to_numeric(df_display[c], errors='coerce').replace([float('inf'), float('-inf')], float('nan')).fillna(0.0).astype(float)
                         style_dict = {c: currency_format_string for c in cols_fmt_curr if c in df_display.columns}
                         if not df_display.empty:
                             try: st.dataframe(df_display.style.format(style_dict), use_container_width=True, height=get_dynamic_df_height(df_display, max_height=500))
@@ -415,10 +412,15 @@ if st.button("🚀 Generate Depreciation Schedule", type="primary", use_containe
                 df_summary = pd.DataFrame(asset_summary_overview_list)
                 if not df_summary.empty:
                     df_summary = df_summary[["Asset", "Useful Life (Years)", "Accumulated Depreciation", "Final Included Period"]]
-                    if "Accumulated Depreciation" in df_summary.columns: df_summary["Accumulated Depreciation"] = pd.to_numeric(df_summary["Accumulated Depreciation"], errors='coerce').fillna(0.0)
-                    try: st.dataframe(df_summary.style.format({"Accumulated Depreciation": currency_format_string}), use_container_width=True, hide_index=True, height=get_dynamic_df_height(df_summary))
+                    if "Accumulated Depreciation" in df_summary.columns: 
+                        df_summary["Accumulated Depreciation"] = pd.to_numeric(df_summary["Accumulated Depreciation"], errors='coerce').replace([float('inf'), float('-inf')], float('nan')).fillna(0.0).astype(float)
+                    try: 
+                        st.dataframe(df_summary.style.format({"Accumulated Depreciation": currency_format_string}), use_container_width=True, hide_index=True, height=get_dynamic_df_height(df_summary))
                     except Exception as e: 
                         st.error(f"⚠️ Error styling Asset Summary: {e}. Unstyled data:")
+                        # st.write("DEBUG: df_summary before error (tab2):")
+                        # st.dataframe(df_summary)
+                        # st.write(df_summary.dtypes)
                         st.dataframe(df_summary, use_container_width=True, hide_index=True)
                 else: st.info("📊 No data for Asset Summary Overview.")
 
@@ -429,13 +431,26 @@ if st.button("🚀 Generate Depreciation Schedule", type="primary", use_containe
                     df_nbv = pd.DataFrame(net_value_summary_list)
                     if not df_nbv.empty:
                         for c_name in ["Cost", "Accumulated Depreciation", "Net Book Value"]:
-                            if c_name in df_nbv.columns: df_nbv[c_name] = pd.to_numeric(df_nbv[c_name], errors='coerce').fillna(0.0)
+                            if c_name in df_nbv.columns: 
+                                df_nbv[c_name] = pd.to_numeric(df_nbv[c_name], errors='coerce').replace([float('inf'), float('-inf')], float('nan')).fillna(0.0).astype(float)
                         nbv_total_row = {"Asset": "**GRAND TOTAL**", "Cost": df_nbv["Cost"].sum(), "Accumulated Depreciation": df_nbv["Accumulated Depreciation"].sum(), "Net Book Value": df_nbv["Net Book Value"].sum()}
                         df_nbv_total = pd.concat([df_nbv, pd.DataFrame([nbv_total_row])], ignore_index=True)
-                        try: st.dataframe(df_nbv_total.style.format({"Cost": currency_format_string, "Accumulated Depreciation": currency_format_string, "Net Book Value": currency_format_string}), use_container_width=True, hide_index=True, height=get_dynamic_df_height(df_nbv_total))
+                        
+                        style_format_dict_tab3 = {
+                            "Cost": currency_format_string,
+                            "Accumulated Depreciation": currency_format_string,
+                            "Net Book Value": currency_format_string
+                        }
+                        try: 
+                            st.dataframe(df_nbv_total.style.format(style_format_dict_tab3), use_container_width=True, hide_index=True, height=get_dynamic_df_height(df_nbv_total))
                         except Exception as e: 
                             st.error(f"⚠️ Error styling Net Value Summary: {e}. Unstyled data:")
+                            # st.write("DEBUG: df_nbv_total before error (tab3):")
+                            # st.dataframe(df_nbv_total)
+                            # st.write(df_nbv_total.dtypes)
+                            # st.write(f"DEBUG: currency_format_string used in tab3: '{currency_format_string}'")
                             st.dataframe(df_nbv_total, use_container_width=True, hide_index=True)
+                        
                         st.markdown("<hr>", unsafe_allow_html=True)
                         st.markdown("<h5 style='text-align:center; margin-bottom:1rem;'>Financial Insights (Overall)</h5>", unsafe_allow_html=True)
                         total_c, total_ad = df_nbv["Cost"].sum(), df_nbv["Accumulated Depreciation"].sum()
