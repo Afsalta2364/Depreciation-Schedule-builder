@@ -12,9 +12,13 @@ def apply_custom_styling():
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     
     /* Global Styling */
-    .main {
+    body { /* Apply to body for overall background */
         font-family: 'Inter', sans-serif;
         background-color: #f7fafc; /* Light background for the whole page */
+    }
+    .main {
+        font-family: 'Inter', sans-serif;
+        background-color: #f7fafc;
     }
     
     /* Custom Header Styling */
@@ -44,24 +48,19 @@ def apply_custom_styling():
     
     /* Section Headers */
     .section-header {
-        /* background: linear-gradient(90deg, #f8f9ff 0%, #e8ecff 100%); */
-        /* padding: 1rem 1.5rem; */
-        /* border-radius: 12px; */
-        /* border-left: 4px solid #667eea; */
-        margin: 2.5rem 0 1.5rem 0; /* Increased top margin */
-        /* box-shadow: 0 2px 8px rgba(0,0,0,0.05); */
+        margin: 2.5rem 0 1.5rem 0; 
     }
     
     .section-header h2 {
-        color: #3a4a68; /* Darker, more professional color */
-        font-size: 1.6rem; /* Slightly larger */
+        color: #3a4a68; 
+        font-size: 1.6rem; 
         font-weight: 600;
         margin: 0;
         display: flex;
         align-items: center;
-        gap: 0.75rem; /* Increased gap */
-        border-bottom: 2px solid #e2e8f0; /* Subtle underline */
-        padding-bottom: 0.75rem; /* Space for underline */
+        gap: 0.75rem; 
+        border-bottom: 2px solid #e2e8f0; 
+        padding-bottom: 0.75rem; 
     }
     
     /* Configuration Container */
@@ -80,27 +79,32 @@ def apply_custom_styling():
         border: 1px solid #e2e8f0;
         border-radius: 12px;
         padding: 1.5rem;
-        margin: 0; /* Remove margin as expander provides spacing */
+        margin: 0; 
         box-shadow: 0 2px 12px rgba(0,0,0,0.08);
         transition: all 0.3s ease;
     }
     
-    .stExpander { /* Style the expander itself */
-        border-radius: 12px;
-        border: 1px solid #d1d8e0;
+    .stExpander { 
+        border-radius: 12px !important; /* important to override default */
+        border: 1px solid #d1d8e0 !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.06);
         margin-bottom: 1.5rem;
+        overflow: hidden; /* Prevents content from breaking border radius */
     }
     .stExpander header button {
-        font-weight: 600;
-        font-size: 1.1rem;
-        color: #4a5568;
+        font-weight: 600 !important;
+        font-size: 1.1rem !important;
+        color: #4a5568 !important;
+        padding: 0.75rem 1rem !important; /* Add some padding to header */
+    }
+    .stExpander header { /* Target expander header directly */
+        background-color: #f9fafb; /* Light background for header */
     }
     
     /* Buttons */
     .stButton > button {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white !important; /* Ensure text color is white */
+        color: white !important; 
         border: none;
         border-radius: 10px;
         padding: 0.75rem 2rem;
@@ -114,122 +118,123 @@ def apply_custom_styling():
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
     }
-    .stDownloadButton > button { /* Specific for download button */
+    .stDownloadButton > button { 
         background: linear-gradient(135deg, #48bb78 0%, #38a169 100%) !important;
         color: white !important;
-        border: none;
-        border-radius: 10px;
-        padding: 0.65rem 1.5rem; /* Slightly smaller padding */
-        font-weight: 600;
-        box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4);
+        border: none !important;
+        border-radius: 10px !important;
+        padding: 0.65rem 1.5rem !important; 
+        font-weight: 600 !important;
+        box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4) !important;
     }
     .stDownloadButton > button:hover {
          transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(72, 187, 120, 0.6);
+        box-shadow: 0 6px 20px rgba(72, 187, 120, 0.6) !important;
     }
-
     
     /* Metrics */
-    .metric-container { /* This class is not directly applied by st.metric, but can be used with st.container */
-        background: white;
-        border-radius: 12px;
-        padding: 1rem 1.25rem;
-        text-align: center;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+    div[data-testid="stMetric"] {
+        background-color: white;
         border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 1.25rem 1rem; /* Adjusted padding */
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         height: 100%; /* For equal height in columns */
+    }
+    div[data-testid="stMetric"] > label { /* Metric label */
+        font-weight: 500;
+        color: #4a5568;
+    }
+    div[data-testid="stMetric"] > div[data-testid="stMetricValue"] { /* Metric value */
+        font-size: 1.75rem; /* Larger value */
+        font-weight: 700;
+        color: #667eea;
     }
     
     /* Warning/Info/Error boxes */
     .stAlert {
-        border-radius: 10px;
-        border-width: 0px; /* Remove default border if any */
-        border-left-width: 4px !important; /* Keep left border for emphasis */
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border-radius: 10px !important;
+        border-width: 0px !important; 
+        border-left-width: 5px !important; 
+        box-shadow: 0 3px 10px rgba(0,0,0,0.08) !important;
+        padding: 1rem 1.25rem !important; /* More padding */
     }
-    .stAlert[data-baseweb="alert"][role="alert"] { /* More specific selector for alerts */
-        background-color: #fff3cd; /* Example for warning, adjust per type if needed */
-        border-left-color: #ffeeba !important;
+    /* Specific alert types */
+    div[data-testid="stAlert"][role="alert"] { /* Warning (yellowish) */
+        background-color: #fffbeb !important;
+        border-left-color: #fec829 !important;
+        color: #784d06 !important;
     }
-    .stAlert[data-baseweb="alert"][role="status"] { /* For st.info */
-         background-color: #d1ecf1;
-         border-left-color: #bee5eb !important;
+    div[data-testid="stAlert"][role="status"] { /* Info (blueish) */
+         background-color: #e0f2fe !important;
+         border-left-color: #3b82f6 !important;
+         color: #0c4a6e !important;
     }
-     .stAlert[data-baseweb="alert"][data-testid="stNotification"] { /* For st.error */
-         background-color: #f8d7da;
-         border-left-color: #f5c6cb !important;
+     div[data-testid="stAlert"][data-testid="stNotification"] { /* Error (reddish) */
+         background-color: #fee2e2 !important;
+         border-left-color: #ef4444 !important;
+         color: #7f1d1d !important;
     }
-
     
     /* Tabs */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 12px; /* Increased gap */
-        background: #f7fafc; /* Light grey background for tab bar */
-        padding: 0.75rem; /* Increased padding */
+        gap: 12px; 
+        background: #f8fafc; 
+        padding: 0.75rem; 
         border-radius: 12px;
         border-bottom: 2px solid #e2e8f0;
     }
     
     .stTabs [data-baseweb="tab"] {
         border-radius: 8px;
-        padding: 0.6rem 1.2rem; /* Slightly more padding */
-        font-weight: 600; /* Bolder tab titles */
+        padding: 0.6rem 1.2rem; 
+        font-weight: 600; 
         color: #4a5568;
-        transition: background-color 0.3s ease;
+        transition: background-color 0.3s ease, color 0.3s ease;
     }
     .stTabs [data-baseweb="tab"]:hover {
-        background-color: #e8ecff;
+        background-color: #eef2ff; /* Lighter purple-blue */
+        color: #667eea;
     }
     .stTabs [data-baseweb="tab"][aria-selected="true"] {
         background-color: #667eea;
-        color: white;
+        color: white !important;
     }
     
     /* Input fields */
-    .stNumberInput > div > div > input,
-    .stTextInput > div > div > input,
-    .stSelectbox > div > div > div,
-    .stDateInput > div > div > div { /* Added stDateInput */
+    .stNumberInput input,
+    .stTextInput input,
+    .stDateInput input,
+    .stSelectbox > div > div { 
         border-radius: 8px !important;
-        border: 1px solid #cbd5e0 !important; /* Slightly darker border */
+        border: 1px solid #cbd5e0 !important; 
         box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
         transition: border-color 0.3s ease, box-shadow 0.3s ease;
     }
-    .stNumberInput > div > div > input:focus,
-    .stTextInput > div > div > input:focus,
-    .stSelectbox > div > div > div:focus-within, /* for selectbox */
-    .stDateInput > div > div > div:focus-within { /* for dateinput */
+    .stNumberInput input:focus,
+    .stTextInput input:focus,
+    .stDateInput input:focus,
+    .stSelectbox > div > div:focus-within {
         border-color: #667eea !important;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2) !important;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.25) !important;
     }
         
     /* Divider styling */
     hr {
         border: none;
         height: 1px;
-        background: linear-gradient(90deg, transparent, #cbd5e0, transparent); /* Slightly darker */
-        margin: 2.5rem 0; /* Increased margin */
+        background: linear-gradient(90deg, transparent, #cbd5e0, transparent); 
+        margin: 2.5rem 0; 
     }
     
     /* Responsive adjustments */
     @media (max-width: 768px) {
-        .main-header h1 {
-            font-size: 2rem;
-        }
-        .main-header p {
-            font-size: 1rem;
-        }
-        .section-header h2 {
-            font-size: 1.3rem;
-        }
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 4px;
-            padding: 0.5rem;
-        }
-        .stTabs [data-baseweb="tab"] {
-             padding: 0.5rem 0.8rem;
-             font-size: 0.9rem;
-        }
+        .main-header h1 { font-size: 2rem; }
+        .main-header p { font-size: 1rem; }
+        .section-header h2 { font-size: 1.3rem; }
+        .stTabs [data-baseweb="tab-list"] { gap: 4px; padding: 0.5rem; }
+        .stTabs [data-baseweb="tab"] { padding: 0.5rem 0.8rem; font-size: 0.9rem; }
+        div[data-testid="stMetric"] > div[data-testid="stMetricValue"] { font-size: 1.5rem; }
     }
     </style>
     """, unsafe_allow_html=True)
@@ -355,13 +360,14 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-col_assets_num, col_spacer_num = st.columns([1,3])
-with col_assets_num:
-    num_assets = st.number_input("🔢 Number of Assets", min_value=1, max_value=25, value=1, step=1, label_visibility="visible")
+col_assets_num_container = st.container() # Container for number input for better control
+with col_assets_num_container:
+     num_assets = st.number_input("🔢 Number of Assets", min_value=1, max_value=25, value=1, step=1)
+
 
 asset_input_data_list = []
 for i in range(num_assets):
-    with st.expander(f"📁 **Asset #{i + 1}** Configuration", expanded=True if i == 0 else False):
+    with st.expander(f"📁 **Asset #{i + 1}** Configuration", expanded=True if num_assets == 1 or i == 0 else False): # Expand first or if only one asset
         st.markdown('<div class="asset-card">', unsafe_allow_html=True)
         asset_name = st.text_input(f"**Asset Name**", value=f"Asset_{i+1}", key=f"name_{i}", placeholder="Enter a descriptive asset name")
         
@@ -382,10 +388,10 @@ for i in range(num_assets):
         if salvage_value_input > cost:
             st.error(f"⚠️ Salvage value ({currency_symbol}{salvage_value_input:,.2f}) exceeds cost ({currency_symbol}{cost:,.2f}). Depreciable base will be {currency_symbol}0.00.")
         if start_date_input > provision_as_of_date_input:
-            st.warning(f"⚠️ In-Service Date ({start_date_input}) is after Provision Date ({provision_as_of_date_input}). No depreciation.")
+            st.warning(f"⚠️ In-Service Date ({start_date_input.strftime('%b %d, %Y')}) is after Provision Date ({provision_as_of_date_input.strftime('%b %d, %Y')}). No depreciation will be calculated.")
         
         depreciable_base = max(0, cost - min(salvage_value_input, cost))
-        st.info(f"💡 Depreciable Base: {currency_symbol}{depreciable_base:,.2f}")
+        st.info(f"💡 Depreciable Base for this asset: **{currency_symbol}{depreciable_base:,.2f}**")
         st.markdown('</div>', unsafe_allow_html=True)
 
         asset_input_data_list.append({
@@ -393,9 +399,10 @@ for i in range(num_assets):
             "start_date": start_date_input, "useful_life": useful_life_years_input,
         })
 
-st.markdown('<div style="text-align: center; margin: 2rem 0;">', unsafe_allow_html=True)
-generate_clicked = st.button("🚀 Generate Depreciation Schedule", type="primary", use_container_width=True)
-st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('<hr style="margin: 2rem 0;">', unsafe_allow_html=True) # Visual separator
+generate_button_container = st.container()
+with generate_button_container:
+    generate_clicked = st.button("🚀 Generate Depreciation Schedule", type="primary", use_container_width=True)
 
 if generate_clicked:
     with st.spinner('⏳ Calculating depreciation schedules... Please wait.'):
@@ -440,8 +447,10 @@ if generate_clicked:
 
             tab1, tab2, tab3 = st.tabs(["📋 **Full Schedule**", "📈 **Summaries**", "💼 **Net Value**"])
 
-            # CORRECTED currency_format_string
+            # --- CRITICAL DEFINITION OF currency_format_string ---
             currency_format_string = f"{currency_symbol}{{:,2f}}" 
+            # --- You can uncomment the line below to verify its value if issues persist ---
+            # st.write(f"DEBUG: currency_format_string = '{currency_format_string}'") 
             
             with tab1:
                 st.markdown(f"""<div style="text-align: center; margin: 1rem 0;"><h3>📋 Full Depreciation Schedule</h3><p style="color: #666;">Up to {provision_as_of_date_input.strftime('%B %d, %Y')}</p></div>""", unsafe_allow_html=True)
@@ -450,7 +459,7 @@ if generate_clicked:
                 main_schedule_df_display = main_schedule_df_full.reindex(columns=schedule_display_cols).copy()
 
                 if main_schedule_df_display.empty or "Asset" not in main_schedule_df_display.columns:
-                    st.info("📝 No data for schedule.")
+                    st.info("📝 No data available to construct the depreciation schedule.")
                 else:
                     main_schedule_df_display = main_schedule_df_display.set_index("Asset")
                     period_cols_in_schedule = [col for col in main_schedule_df_display.columns if col != "Total Depreciation"]
@@ -464,8 +473,8 @@ if generate_clicked:
                             sorted_period_cols = [pair[0] for pair in sorted_pairs]
                             sorted_period_cols = [col for col in sorted_period_cols if col in main_schedule_df_display.columns]
                         except Exception as e:
-                            st.warning(f"Could not sort period columns: {e}. Unsorted.")
-                            sorted_period_cols = period_cols_in_schedule
+                            st.warning(f"Could not sort period columns: {e}. Displaying unsorted.")
+                            sorted_period_cols = period_cols_in_schedule # Fallback
                     final_schedule_columns_order = sorted_period_cols + (["Total Depreciation"] if "Total Depreciation" in main_schedule_df_display.columns else [])
                     
                     if final_schedule_columns_order and not main_schedule_df_display.empty:
@@ -478,51 +487,53 @@ if generate_clicked:
                         
                         if not main_schedule_df_display.empty:
                             try:
-                                st.dataframe(main_schedule_df_display.style.format(style_dict_schedule), use_container_width=True, height=min(400, (len(main_schedule_df_display) + 1) * 35 + 3))
+                                df_height = min(400, (len(main_schedule_df_display) + 1) * 35 + 3) # Dynamic height
+                                st.dataframe(main_schedule_df_display.style.format(style_dict_schedule), use_container_width=True, height=df_height)
                             except Exception as e:
-                                st.error(f"⚠️ Error styling schedule: {e}. Unstyled data:")
+                                st.error(f"⚠️ Error applying styles to the schedule DataFrame: {e}. Displaying unstyled data.")
                                 st.dataframe(main_schedule_df_display, use_container_width=True)
                         else:
-                            st.info("Schedule empty after ordering.")
+                            st.info("The schedule is empty after attempting to order columns.")
                         
-                        st.markdown("---")
-                        st.markdown("### 📊 Schedule Summary")
+                        st.markdown("<hr>", unsafe_allow_html=True)
+                        st.markdown("<h4 style='text-align:center; margin-bottom:1rem;'>📊 Schedule Summary</h4>", unsafe_allow_html=True)
                         total_assets_in_schedule_display = len(main_schedule_df_display)
                         grand_total_accum_depr_schedule = main_schedule_df_display['Total Depreciation'].sum() if 'Total Depreciation' in main_schedule_df_display.columns and not main_schedule_df_display.empty else 0.0
                         
-                        summary_cols = st.columns(4)
-                        summary_cols[0].metric(label="📋 Assets in Schedule", value=total_assets_in_schedule_display)
-                        summary_cols[1].metric(label="💰 Total Depreciation", value=f"{currency_symbol}{grand_total_accum_depr_schedule:,.2f}")
+                        summary_cols_sched = st.columns(4)
+                        summary_cols_sched[0].metric(label="📋 Assets in Schedule", value=total_assets_in_schedule_display)
+                        summary_cols_sched[1].metric(label="💰 Total Depreciation", value=f"{currency_symbol}{grand_total_accum_depr_schedule:,.2f}")
                         avg_depreciation = grand_total_accum_depr_schedule / total_assets_in_schedule_display if total_assets_in_schedule_display > 0 else 0
-                        summary_cols[2].metric(label="📊 Average per Asset", value=f"{currency_symbol}{avg_depreciation:,.2f}")
-                        summary_cols[3].metric(label="📅 Schedule Mode", value=mode)
+                        summary_cols_sched[2].metric(label="📊 Average per Asset", value=f"{currency_symbol}{avg_depreciation:,.2f}")
+                        summary_cols_sched[3].metric(label="📅 Schedule Mode", value=mode)
                         
                         if not main_schedule_df_display.empty:
                             csv_export_data = main_schedule_df_display.reset_index().to_csv(index=False, float_format='%.2f').encode('utf-8')
-                            st.download_button(label="⬇️ Download Schedule as CSV", data=csv_export_data, file_name=f"{mode.lower()}_dep_schedule_{provision_as_of_date_input.strftime('%Y%m%d')}.csv", mime="text/csv", use_container_width=True)
+                            st.download_button(label="⬇️ Download Schedule as CSV", data=csv_export_data, file_name=f"{mode.lower()}_depreciation_schedule_{provision_as_of_date_input.strftime('%Y%m%d')}.csv", mime="text/csv", use_container_width=True)
                     elif main_schedule_df_display.empty and not processed_asset_data_rows:
-                        st.info("📝 No asset data was configured for schedule.")
+                        st.info("📝 No asset data was configured to display in the schedule.")
                     else: 
-                        st.info("📅 No depreciation periods for configured assets based on dates.")
+                        st.info("📅 No depreciation periods to display for the configured assets based on the provision date and asset start dates.")
 
             with tab2:
-                st.markdown("### 📈 Asset Summary Overview")
+                st.markdown("<h3 style='text-align:center; margin-bottom:1rem;'>📈 Asset Summary Overview</h3>", unsafe_allow_html=True)
                 summary_overview_df = pd.DataFrame(asset_summary_overview_list)
                 if not summary_overview_df.empty:
                     summary_overview_df = summary_overview_df[["Asset", "Useful Life (Years)", "Accumulated Depreciation", "Final Included Period"]]
                     if "Accumulated Depreciation" in summary_overview_df.columns:
                         summary_overview_df["Accumulated Depreciation"] = pd.to_numeric(summary_overview_df["Accumulated Depreciation"], errors='coerce').fillna(0.0)
                     try:
-                        st.dataframe(summary_overview_df.style.format({"Accumulated Depreciation": currency_format_string}), use_container_width=True, hide_index=True, height=min(300, (len(summary_overview_df) + 1) * 35 + 3))
+                        df_height = min(300, (len(summary_overview_df) + 1) * 35 + 3) # Dynamic height
+                        st.dataframe(summary_overview_df.style.format({"Accumulated Depreciation": currency_format_string}), use_container_width=True, hide_index=True, height=df_height)
                     except Exception as e:
-                        st.error(f"⚠️ Error styling Asset Summary: {e}. Unstyled data:")
+                        st.error(f"⚠️ Error applying styles to the Asset Summary DataFrame: {e}. Displaying unstyled data.")
                         st.dataframe(summary_overview_df, use_container_width=True, hide_index=True)
                 else:
                     st.info("📊 No data for Asset Summary Overview.")
 
             with tab3:
-                st.markdown(f"### 💼 Net Book Value Summary")
-                st.markdown(f"*As of {provision_as_of_date_input.strftime('%B %d, %Y')}*")
+                st.markdown(f"<h3 style='text-align:center; margin-bottom:0.5rem;'>💼 Net Book Value Summary</h3>", unsafe_allow_html=True)
+                st.markdown(f"<p style='text-align:center; color: #666; margin-bottom:1rem;'><em>As of {provision_as_of_date_input.strftime('%B %d, %Y')}</em></p>", unsafe_allow_html=True)
                 if net_value_summary_list:
                     net_value_df = pd.DataFrame(net_value_summary_list)
                     if not net_value_df.empty:
@@ -533,40 +544,41 @@ if generate_clicked:
                         nbv_total_row_df = pd.DataFrame([nbv_total_row_data])
                         net_value_df_with_total = pd.concat([net_value_df, nbv_total_row_df], ignore_index=True)
                         try:
-                            st.dataframe(net_value_df_with_total.style.format({"Cost": currency_format_string, "Accumulated Depreciation": currency_format_string, "Net Book Value": currency_format_string}), use_container_width=True, hide_index=True, height=min(300, (len(net_value_df_with_total) + 1) * 35 + 3))
+                            df_height = min(300, (len(net_value_df_with_total) + 1) * 35 + 3) # Dynamic height
+                            st.dataframe(net_value_df_with_total.style.format({"Cost": currency_format_string, "Accumulated Depreciation": currency_format_string, "Net Book Value": currency_format_string}), use_container_width=True, hide_index=True, height=df_height)
                         except Exception as e:
-                            st.error(f"⚠️ Error styling Net Value Summary: {e}. Unstyled data:")
+                            st.error(f"⚠️ Error applying styles to the Net Value Summary DataFrame: {e}. Displaying unstyled data.")
                             st.dataframe(net_value_df_with_total, use_container_width=True, hide_index=True)
                         
-                        st.markdown("---")
-                        st.markdown("#### 💡 Financial Insights")
+                        st.markdown("<hr>", unsafe_allow_html=True)
+                        st.markdown("<h4 style='text-align:center; margin-bottom:1rem;'>💡 Financial Insights (Overall)</h4>", unsafe_allow_html=True)
                         total_cost = net_value_df["Cost"].sum()
                         total_accumulated = net_value_df["Accumulated Depreciation"].sum()
                         depreciation_percentage = (total_accumulated / total_cost * 100) if total_cost > 0 else 0
                         
-                        insights_cols = st.columns(2)
-                        insights_cols[0].metric(label="📊 Depreciation Ratio", value=f"{depreciation_percentage:.1f}%", help="% of original cost depreciated")
-                        insights_cols[1].metric(label="📈 Remaining Value Ratio", value=f"{100-depreciation_percentage:.1f}%", help="% of original cost remaining as book value")
+                        insights_cols_nbv = st.columns(2)
+                        insights_cols_nbv[0].metric(label="📊 Overall Depreciation Ratio", value=f"{depreciation_percentage:.1f}%", help="Percentage of total original cost that has been depreciated across all assets.")
+                        insights_cols_nbv[1].metric(label="📈 Overall Remaining Value Ratio", value=f"{100-depreciation_percentage:.1f}%", help="Percentage of total original cost remaining as book value across all assets.")
                 else:
                     st.info("💼 No data for Net Value Summary.")
 else:
     st.markdown("""
         <div style="text-align: center; padding: 3rem 1rem; background: linear-gradient(135deg, #f8f9ff 0%, #e8ecff 100%); border-radius: 15px; margin: 2rem 0; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
             <h3 style="color: #4a5568; margin-bottom: 1rem;">🎯 Ready to Calculate Depreciation?</h3>
-            <p style="color: #718096; font-size: 1.1rem; margin-bottom: 1.5rem;">Configure assets and click <strong>'Generate Depreciation Schedule'</strong> to see:</p>
+            <p style="color: #718096; font-size: 1.1rem; margin-bottom: 1.5rem;">Configure your assets above and click <strong>'Generate Depreciation Schedule'</strong> to see:</p>
             <div style="display: flex; justify-content: space-around; gap: 1rem; flex-wrap: wrap; margin-top: 1rem;">
-                <div style="text-align: center; padding: 1rem; background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); min-width: 180px;">
+                <div style="text-align: center; padding: 1rem; background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); min-width: 180px; flex:1;">
                     <div style="font-size: 2.5rem; margin-bottom: 0.5rem; color: #667eea;">📋</div>
-                    <div style="font-weight: 600; color: #4a5568;">Detailed Schedules</div><div style="color: #718096; font-size: 0.9rem;">Period-by-period</div></div>
-                <div style="text-align: center; padding: 1rem; background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); min-width: 180px;">
+                    <div style="font-weight: 600; color: #4a5568;">Detailed Schedules</div><div style="color: #718096; font-size: 0.9rem;">Period-by-period breakdown</div></div>
+                <div style="text-align: center; padding: 1rem; background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); min-width: 180px; flex:1;">
                     <div style="font-size: 2.5rem; margin-bottom: 0.5rem; color: #667eea;">📊</div>
                     <div style="font-weight: 600; color: #4a5568;">Asset Summaries</div><div style="color: #718096; font-size: 0.9rem;">Key metrics & insights</div></div>
-                <div style="text-align: center; padding: 1rem; background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); min-width: 180px;">
+                <div style="text-align: center; padding: 1rem; background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); min-width: 180px; flex:1;">
                     <div style="font-size: 2.5rem; margin-bottom: 0.5rem; color: #667eea;">💼</div>
-                    <div style="font-weight: 600; color: #4a5568;">Net Book Values</div><div style="color: #718096; font-size: 0.9rem;">Current valuations</div></div>
+                    <div style="font-weight: 600; color: #4a5568;">Net Book Values</div><div style="color: #718096; font-size: 0.9rem;">Current asset valuations</div></div>
             </div>
         </div>
     """, unsafe_allow_html=True)
 
-st.markdown("---")
+st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown("""<div style="text-align: center; color: #718096; font-size: 0.9rem; padding: 1rem 0 2rem 0;"><p>📊 <strong>Depreciation Schedule Builder</strong> | Straight-line depreciation calculator</p><p style="margin-top: 0.5rem;">Built with Streamlit | Supports US GAAP, IFRS, Indian GAAP</p></div>""", unsafe_allow_html=True)
