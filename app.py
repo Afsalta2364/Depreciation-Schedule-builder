@@ -208,29 +208,24 @@ if st.button("📊 Generate Depreciation Schedule", type="primary", use_containe
                     sort_fmt = "%b %Y" if mode == "Monthly" else "%Y"
                     valid_date_strings = [p for p in period_cols_in_schedule if isinstance(p, str)]
                     try:
-                        # Create a temporary series for sorting to handle NaT from coerce gracefully
                         datetime_objects = [pd.to_datetime(d, format=sort_fmt, errors='coerce') for d in valid_date_strings]
-                        # Pair original strings with datetime objects, filter out NaTs, then sort by datetime
                         sorted_pairs = sorted(
                             [(s, dt) for s, dt in zip(valid_date_strings, datetime_objects) if pd.notna(dt)],
                             key=lambda pair: pair[1]
                         )
                         sorted_period_cols = [pair[0] for pair in sorted_pairs]
-                        # Ensure these sorted columns actually exist in the DataFrame (they should if from valid_date_strings)
                         sorted_period_cols = [col for col in sorted_period_cols if col in main_schedule_df_display.columns]
-                    except Exception as e: # Broad catch for any sorting issue
+                    except Exception as e:
                         st.warning(f"Could not sort period columns due to: {e}. Displaying unsorted.")
-                        sorted_period_cols = period_cols_in_schedule # Fallback to unsorted
+                        sorted_period_cols = period_cols_in_schedule
 
                 final_schedule_columns_order = sorted_period_cols + (["Total Depreciation"] if "Total Depreciation" in main_schedule_df_display.columns else [])
                 
                 if final_schedule_columns_order and not main_schedule_df_display.empty:
                     main_schedule_df_display = main_schedule_df_display[final_schedule_columns_order]
 
-                    # Columns to be formatted with currency
                     cols_to_format_currency = [col for col in main_schedule_df_display.columns if col == "Total Depreciation" or col in sorted_period_cols]
                     
-                    # Defensive: Ensure columns to be formatted are numeric
                     for col in cols_to_format_currency:
                         if col in main_schedule_df_display.columns:
                             main_schedule_df_display[col] = pd.to_numeric(main_schedule_df_display[col], errors='coerce').fillna(0.0)
@@ -238,10 +233,10 @@ if st.button("📊 Generate Depreciation Schedule", type="primary", use_containe
                     style_dict_schedule = {
                         col: currency_format_string 
                         for col in cols_to_format_currency
-                        if col in main_schedule_df_display.columns # Final check
+                        if col in main_schedule_df_display.columns
                     }
                     
-                    if not main_schedule_df_display.empty: # Check again before styling
+                    if not main_schedule_df_display.empty:
                         try:
                             st.dataframe(
                                 main_schedule_df_display.style.format(style_dict_schedule),
@@ -249,18 +244,10 @@ if st.button("📊 Generate Depreciation Schedule", type="primary", use_containe
                             )
                         except Exception as e:
                             st.error(f"⚠️ Error applying styles to the schedule DataFrame: {e}. Displaying unstyled data.")
-                            # For debugging, print info about the DataFrame just before styling attempt
-                            # st.write("DataFrame Info before styling error:")
-                            # st.write(main_schedule_df_display.info())
-                            # st.write("DataFrame Head before styling error:")
-                            # st.write(main_schedule_df_display.head())
-                            # st.write("Style Dictionary:")
-                            # st.write(style_dict_schedule)
-                            st.dataframe(main_schedule_df_display, use_container_width=True) # Fallback
+                            st.dataframe(main_schedule_df_display, use_container_width=True)
                     else:
                         st.info("The schedule is empty after attempting to order columns.")
 
-                    # Schedule Totals and Download Button
                     st.markdown("---")
                     st.markdown("<h4 style='text-align: center;'>Schedule Totals</h4>", unsafe_allow_html=True)
                     total_assets_in_schedule_display = len(main_schedule_df_display)
@@ -288,9 +275,26 @@ if st.button("📊 Generate Depreciation Schedule", type="primary", use_containe
             st.markdown("<h3 style='text-align: center;'>Asset Summary Overview</h3>", unsafe_allow_html=True)
             summary_overview_df = pd.DataFrame(asset_summary_overview_list)
             if not summary_overview_df.empty:
-                summary_overview_df = summary_overview_df[["Asset", "Useful Life (Years)", "Accumulated Depreciation", "Final Included Period"]]
-                st.dataframe(summary_overview_df.style.format({"Accumulated Depreciation": currency_format_string}), 
-                             use_container_width=True, hide_index=True)
+                summary_overview_df = summary_overview_df[[
+                    "Asset", "Useful Life (Years)", 
+                    "Accumulated Depreciation", "Final Included Period"
+                ]]
+                
+                # Ensure 'Accumulated Depreciation' is numeric before styling
+                if "Accumulated Depreciation" in summary_overview_df.columns:
+                    summary_overview_df["Accumulated Depreciation"] = pd.to_numeric(
+                        summary_overview_df["Accumulated Depreciation"], errors='coerce'
+                    ).fillna(0.0)
+
+                try:
+                    st.dataframe(
+                        summary_overview_df.style.format({"Accumulated Depreciation": currency_format_string}), 
+                        use_container_width=True, 
+                        hide_index=True
+                    )
+                except Exception as e:
+                    st.error(f"⚠️ Error applying styles to the Asset Summary DataFrame: {e}. Displaying unstyled data.")
+                    st.dataframe(summary_overview_df, use_container_width=True, hide_index=True) # Fallback
             else:
                 st.info("No data for Asset Summary Overview.")
 
@@ -299,6 +303,11 @@ if st.button("📊 Generate Depreciation Schedule", type="primary", use_containe
             if net_value_summary_list:
                 net_value_df = pd.DataFrame(net_value_summary_list)
                 if not net_value_df.empty:
+                    # Ensure numeric types for sum and styling
+                    for col_name in ["Cost", "Accumulated Depreciation", "Net Book Value"]:
+                        if col_name in net_value_df.columns:
+                             net_value_df[col_name] = pd.to_numeric(net_value_df[col_name], errors='coerce').fillna(0.0)
+                    
                     nbv_total_row_data = {
                         "Asset": "Grand Total", "Cost": net_value_df["Cost"].sum(),
                         "Accumulated Depreciation": net_value_df["Accumulated Depreciation"].sum(),
@@ -307,11 +316,15 @@ if st.button("📊 Generate Depreciation Schedule", type="primary", use_containe
                     nbv_total_row_df = pd.DataFrame([nbv_total_row_data])
                     net_value_df_with_total = pd.concat([net_value_df, nbv_total_row_df], ignore_index=True)
 
-                    st.dataframe(net_value_df_with_total.style.format({
-                        "Cost": currency_format_string,
-                        "Accumulated Depreciation": currency_format_string,
-                        "Net Book Value": currency_format_string
-                    }), use_container_width=True, hide_index=True)
+                    try:
+                        st.dataframe(net_value_df_with_total.style.format({
+                            "Cost": currency_format_string,
+                            "Accumulated Depreciation": currency_format_string,
+                            "Net Book Value": currency_format_string
+                        }), use_container_width=True, hide_index=True)
+                    except Exception as e:
+                        st.error(f"⚠️ Error applying styles to the Net Value Summary DataFrame: {e}. Displaying unstyled data.")
+                        st.dataframe(net_value_df_with_total, use_container_width=True, hide_index=True) # Fallback
             else:
                 st.info("No data for Net Value Summary.")
 else:
