@@ -194,28 +194,39 @@ if st.button("📊 Generate Depreciation Schedule", type="primary", use_containe
                                     [col for col in main_schedule_df_full.columns if col not in ["Asset", "Total Depreciation", "Original Cost", "Original Salvage"]] + \
                                     ["Total Depreciation"]
             main_schedule_df_display = main_schedule_df_full.reindex(columns=schedule_display_cols).copy()
-            main_schedule_df_display = main_schedule_df_display.set_index("Asset")
+            if not main_schedule_df_display.empty: # Ensure 'Asset' column exists before setting index
+                main_schedule_df_display = main_schedule_df_display.set_index("Asset")
 
             period_cols_in_schedule = [col for col in main_schedule_df_display.columns if col != "Total Depreciation"]
             sorted_period_cols = []
             if period_cols_in_schedule:
                 sort_fmt = "%b %Y" if mode == "Monthly" else "%Y"
                 valid_date_strings = [p for p in period_cols_in_schedule if isinstance(p, str)]
-                sorted_period_cols = sorted(
-                    valid_date_strings, 
-                    key=lambda d: pd.to_datetime(d, format=sort_fmt, errors='coerce')
-                )
-                sorted_period_cols = [p for p in sorted_period_cols if pd.notna(pd.to_datetime(p, format=sort_fmt, errors='coerce'))]
+                try:
+                    sorted_period_cols = sorted(
+                        valid_date_strings, 
+                        key=lambda d: pd.to_datetime(d, format=sort_fmt, errors='coerce')
+                    )
+                    sorted_period_cols = [p for p in sorted_period_cols if pd.notna(pd.to_datetime(p, format=sort_fmt, errors='coerce'))]
+                except ValueError: # Should be caught by errors='coerce' but as a fallback
+                    sorted_period_cols = valid_date_strings # Keep unsorted if error
             
             final_schedule_columns_order = sorted_period_cols + (["Total Depreciation"] if "Total Depreciation" in main_schedule_df_display.columns else [])
             
-            if final_schedule_columns_order:
+            if final_schedule_columns_order and not main_schedule_df_display.empty:
                 main_schedule_df_display = main_schedule_df_display[final_schedule_columns_order]
                 
-                # Apply currency formatting to all periodic depreciation columns and Total Depreciation
-                style_dict_schedule = {col: currency_format_string for col in main_schedule_df_display.columns if col == "Total Depreciation" or col in sorted_period_cols}
-
-                st.dataframe(main_schedule_df_display.style.format(style_dict_schedule, precision=2), use_container_width=True)
+                style_dict_schedule = {
+                    col: currency_format_string 
+                    for col in main_schedule_df_display.columns 
+                    if col == "Total Depreciation" or col in sorted_period_cols
+                }
+                
+                # MODIFIED LINE: Removed precision=2 from .format()
+                st.dataframe(
+                    main_schedule_df_display.style.format(style_dict_schedule), 
+                    use_container_width=True
+                )
 
                 st.markdown("---")
                 st.markdown("<h4 style='text-align: center;'>Schedule Totals</h4>", unsafe_allow_html=True)
@@ -234,8 +245,11 @@ if st.button("📊 Generate Depreciation Schedule", type="primary", use_containe
                     file_name=f"{mode.lower()}_dep_schedule_{provision_as_of_date_input.strftime('%Y%m%d')}.csv",
                     mime="text/csv", use_container_width=True
                 )
-            else:
+            elif main_schedule_df_display.empty and not processed_asset_data_rows:
+                st.info("No asset data available to display in the schedule.")
+            else: # main_schedule_df_display might be empty if all assets started after provision date, or no periods generated
                  st.info("No depreciation periods to display based on the provision date and asset start dates.")
+
 
         with tab2: # Asset Summaries
             st.markdown("<h3 style='text-align: center;'>Asset Summary Overview</h3>", unsafe_allow_html=True)
