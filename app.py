@@ -304,8 +304,6 @@ with st.container(border=True):
         selected_currency_label = st.selectbox("Currency", list(CURRENCIES.keys()), index=0, label_visibility="collapsed")
         currency_symbol = CURRENCIES[selected_currency_label]
 
-currency_format_string = f"{currency_symbol}{{:,2f}}" # Single definition
-
 st.markdown("""<div class="app-section-header"><h2>➕ Asset Configuration</h2></div>""", unsafe_allow_html=True)
 num_assets = st.number_input("Number of Assets to Configure", min_value=1, max_value=25, value=1, step=1, help="Specify how many assets you want to add to the schedule.")
 
@@ -365,12 +363,22 @@ if st.button("🚀 Generate Depreciation Schedule", type="primary", use_containe
             def get_dynamic_df_height(df, base_height=35, row_height=35, max_height=400, min_height=100):
                 calculated_height = base_height + len(df) * row_height
                 return min(max_height, max(min_height, calculated_height))
+            
+            # --- Pre-formatting Function ---
+            def preformat_currency_column(df, column_name, symbol):
+                if column_name in df.columns:
+                    # Ensure numeric and handle NaN/inf first
+                    df[column_name] = pd.to_numeric(df[column_name], errors='coerce').replace([float('inf'), float('-inf')], float('nan')).fillna(0.0).astype(float)
+                    # Apply f-string formatting to convert to string
+                    df[column_name] = df[column_name].apply(lambda x: f"{symbol}{x:,.2f}")
+                return df
 
             with tab1:
                 st.markdown(f"""<div style="text-align: center; margin-bottom: 1.5rem;"><h4>Full Depreciation Schedule</h4><p style="color: var(--text-color-muted, #666); font-size:0.9rem;">Up to {provision_as_of_date_input.strftime('%B %d, %Y')}</p></div>""", unsafe_allow_html=True)
                 df_full = pd.DataFrame(processed_asset_data_rows)
                 df_display_cols = ["Asset"] + [c for c in df_full.columns if c not in ["Asset", "Total Depreciation", "Original Cost", "Original Salvage"]] + ["Total Depreciation"]
                 df_display = df_full.reindex(columns=df_display_cols).copy()
+
                 if df_display.empty or "Asset" not in df_display.columns: st.info("📝 No data for schedule.")
                 else:
                     df_display = df_display.set_index("Asset")
@@ -382,28 +390,40 @@ if st.button("🚀 Generate Depreciation Schedule", type="primary", use_containe
                             dt_objs = [pd.to_datetime(d, format=fmt, errors='coerce') for d in period_cols if isinstance(d, str)]
                             s_pairs = sorted([(s, dt) for s, dt in zip([p for p in period_cols if isinstance(p,str)], dt_objs) if pd.notna(dt)], key=lambda pair: pair[1])
                             sorted_p_cols = [p[0] for p in s_pairs if p[0] in df_display.columns]
-                        except Exception: sorted_p_cols = period_cols
+                        except Exception: sorted_p_cols = period_cols # Fallback
                     final_cols_order = sorted_p_cols + (["Total Depreciation"] if "Total Depreciation" in df_display.columns else [])
+                    
                     if final_cols_order and not df_display.empty:
                         df_display = df_display[final_cols_order]
-                        cols_fmt_curr = [c for c in df_display.columns if c == "Total Depreciation" or c in sorted_p_cols]
-                        for c in cols_fmt_curr: 
-                            if c in df_display.columns: 
-                                df_display[c] = pd.to_numeric(df_display[c], errors='coerce').replace([float('inf'), float('-inf')], float('nan')).fillna(0.0).astype(float)
-                        style_dict = {c: currency_format_string for c in cols_fmt_curr if c in df_display.columns}
+                        cols_to_preformat = [c for c in df_display.columns if c == "Total Depreciation" or c in sorted_p_cols]
+                        
+                        for col_name in cols_to_preformat:
+                            df_display = preformat_currency_column(df_display, col_name, currency_symbol)
+                        
                         if not df_display.empty:
-                            try: st.dataframe(df_display.style.format(style_dict), use_container_width=True, height=get_dynamic_df_height(df_display, max_height=500))
-                            except Exception as e: 
-                                st.error(f"⚠️ Error styling schedule: {e}. Unstyled data:")
-                                st.dataframe(df_display, use_container_width=True)
+                            # Styler.format is no longer needed for pre-formatted columns
+                            st.dataframe(df_display, use_container_width=True, height=get_dynamic_df_height(df_display, max_height=500))
                         else: st.info("Schedule empty after ordering.")
+                        
                         st.markdown("<hr>", unsafe_allow_html=True)
                         st.markdown("<h5 style='text-align:center; margin-bottom:1rem;'>Schedule Totals</h5>", unsafe_allow_html=True)
-                        total_assets, total_depr = len(df_display), df_display['Total Depreciation'].sum() if 'Total Depreciation' in df_display.columns and not df_display.empty else 0.0
+                        
+                        # For sum, use the original numeric data before it was pre-formatted to string
+                        total_depr_numeric = 0.0
+                        if 'Total Depreciation' in df_full.columns: # Use df_full for numeric sum
+                             numeric_total_dep = pd.to_numeric(df_full['Total Depreciation'], errors='coerce').fillna(0)
+                             total_depr_numeric = numeric_total_dep.sum()
+                        
+                        total_assets = len(df_display)
                         scols = st.columns(2)
                         scols[0].metric("Assets in Schedule", total_assets)
-                        scols[1].metric("Total Depreciation", f"{currency_symbol}{total_depr:,.2f}")
-                        if not df_display.empty: st.download_button("⬇️ Download Schedule CSV", df_display.reset_index().to_csv(index=False, float_format='%.2f').encode('utf-8'), f"{mode.lower()}_dep_sched_{provision_as_of_date_input.strftime('%Y%m%d')}.csv", "text/csv", use_container_width=True)
+                        scols[1].metric("Total Depreciation", f"{currency_symbol}{total_depr_numeric:,.2f}") # Use numeric sum here
+                        
+                        if not df_display.empty: 
+                            st.download_button("⬇️ Download Schedule CSV", 
+                                               df_display.reset_index().to_csv(index=False).encode('utf-8'), # Export the string-formatted df
+                                               f"{mode.lower()}_dep_sched_{provision_as_of_date_input.strftime('%Y%m%d')}.csv", 
+                                               "text/csv", use_container_width=True)
                     elif df_display.empty and not processed_asset_data_rows: st.info("📝 No asset data configured.")
                     else: st.info("📅 No depreciation periods for configured assets based on dates.")
 
@@ -412,16 +432,12 @@ if st.button("🚀 Generate Depreciation Schedule", type="primary", use_containe
                 df_summary = pd.DataFrame(asset_summary_overview_list)
                 if not df_summary.empty:
                     df_summary = df_summary[["Asset", "Useful Life (Years)", "Accumulated Depreciation", "Final Included Period"]]
-                    if "Accumulated Depreciation" in df_summary.columns: 
-                        df_summary["Accumulated Depreciation"] = pd.to_numeric(df_summary["Accumulated Depreciation"], errors='coerce').replace([float('inf'), float('-inf')], float('nan')).fillna(0.0).astype(float)
-                    try: 
-                        st.dataframe(df_summary.style.format({"Accumulated Depreciation": currency_format_string}), use_container_width=True, hide_index=True, height=get_dynamic_df_height(df_summary))
-                    except Exception as e: 
-                        st.error(f"⚠️ Error styling Asset Summary: {e}. Unstyled data:")
-                        # st.write("DEBUG: df_summary before error (tab2):")
-                        # st.dataframe(df_summary)
-                        # st.write(df_summary.dtypes)
-                        st.dataframe(df_summary, use_container_width=True, hide_index=True)
+                    
+                    # Pre-format the "Accumulated Depreciation" column
+                    df_summary = preformat_currency_column(df_summary, "Accumulated Depreciation", currency_symbol)
+                    
+                    # Styler.format is not needed for this pre-formatted column
+                    st.dataframe(df_summary, use_container_width=True, hide_index=True, height=get_dynamic_df_height(df_summary))
                 else: st.info("📊 No data for Asset Summary Overview.")
 
             with tab3:
@@ -430,31 +446,31 @@ if st.button("🚀 Generate Depreciation Schedule", type="primary", use_containe
                 if net_value_summary_list:
                     df_nbv = pd.DataFrame(net_value_summary_list)
                     if not df_nbv.empty:
-                        for c_name in ["Cost", "Accumulated Depreciation", "Net Book Value"]:
-                            if c_name in df_nbv.columns: 
-                                df_nbv[c_name] = pd.to_numeric(df_nbv[c_name], errors='coerce').replace([float('inf'), float('-inf')], float('nan')).fillna(0.0).astype(float)
-                        nbv_total_row = {"Asset": "**GRAND TOTAL**", "Cost": df_nbv["Cost"].sum(), "Accumulated Depreciation": df_nbv["Accumulated Depreciation"].sum(), "Net Book Value": df_nbv["Net Book Value"].sum()}
+                        # Store numeric sums before pre-formatting for GRAND TOTAL row
+                        numeric_cost_sum = pd.to_numeric(df_nbv["Cost"], errors='coerce').fillna(0.0).sum()
+                        numeric_ad_sum = pd.to_numeric(df_nbv["Accumulated Depreciation"], errors='coerce').fillna(0.0).sum()
+                        numeric_nbv_sum = pd.to_numeric(df_nbv["Net Book Value"], errors='coerce').fillna(0.0).sum()
+
+                        # Pre-format columns for display
+                        for col_name_nbv in ["Cost", "Accumulated Depreciation", "Net Book Value"]:
+                            df_nbv = preformat_currency_column(df_nbv, col_name_nbv, currency_symbol)
+                        
+                        # GRAND TOTAL row with pre-formatted strings
+                        nbv_total_row = {
+                            "Asset": "**GRAND TOTAL**", 
+                            "Cost": f"{currency_symbol}{numeric_cost_sum:,.2f}", 
+                            "Accumulated Depreciation": f"{currency_symbol}{numeric_ad_sum:,.2f}", 
+                            "Net Book Value": f"{currency_symbol}{numeric_nbv_sum:,.2f}"
+                        }
                         df_nbv_total = pd.concat([df_nbv, pd.DataFrame([nbv_total_row])], ignore_index=True)
                         
-                        style_format_dict_tab3 = {
-                            "Cost": currency_format_string,
-                            "Accumulated Depreciation": currency_format_string,
-                            "Net Book Value": currency_format_string
-                        }
-                        try: 
-                            st.dataframe(df_nbv_total.style.format(style_format_dict_tab3), use_container_width=True, hide_index=True, height=get_dynamic_df_height(df_nbv_total))
-                        except Exception as e: 
-                            st.error(f"⚠️ Error styling Net Value Summary: {e}. Unstyled data:")
-                            # st.write("DEBUG: df_nbv_total before error (tab3):")
-                            # st.dataframe(df_nbv_total)
-                            # st.write(df_nbv_total.dtypes)
-                            # st.write(f"DEBUG: currency_format_string used in tab3: '{currency_format_string}'")
-                            st.dataframe(df_nbv_total, use_container_width=True, hide_index=True)
+                        # Styler.format is not needed
+                        st.dataframe(df_nbv_total, use_container_width=True, hide_index=True, height=get_dynamic_df_height(df_nbv_total))
                         
                         st.markdown("<hr>", unsafe_allow_html=True)
                         st.markdown("<h5 style='text-align:center; margin-bottom:1rem;'>Financial Insights (Overall)</h5>", unsafe_allow_html=True)
-                        total_c, total_ad = df_nbv["Cost"].sum(), df_nbv["Accumulated Depreciation"].sum()
-                        depr_ratio = (total_ad / total_c * 100) if total_c > 0 else 0
+                        # Use the numeric sums for calculations
+                        depr_ratio = (numeric_ad_sum / numeric_cost_sum * 100) if numeric_cost_sum > 0 else 0
                         insights_cols = st.columns(2)
                         insights_cols[0].metric("Depreciation Ratio", f"{depr_ratio:.1f}%", help="% of total original cost depreciated.")
                         insights_cols[1].metric("Remaining Value Ratio", f"{100-depr_ratio:.1f}%", help="% of total original cost remaining as book value.")
