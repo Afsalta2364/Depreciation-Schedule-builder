@@ -15,7 +15,7 @@ hide_github_icon = """
     }
     </style>
 """
-st.markdown(hide_github_icon, unsafe_allow_html=True)
+st.markdown(hide_github_icon, unsafe_allow_html=False)
 # --- END HIDE GITHUB ICON ---
 
 # ------------------ Custom CSS Styling (Theme-Aware) ------------------
