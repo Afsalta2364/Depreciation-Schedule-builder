@@ -4,6 +4,20 @@ from datetime import date
 import datetime # Required for MINYEAR, MAXYEAR
 from dateutil.relativedelta import relativedelta
 
+# --- HIDE STREAMLIT GITHUB ICON ---
+# This CSS injects a style tag into the app's HTML to hide the GitHub icon.
+# It targets the anchor tag (link) within the Streamlit toolbar that contains
+# 'github.com' in its href attribute and sets its display property to 'none'.
+hide_github_icon = """
+    <style>
+    div[data-testid="stToolbar"] > a[href*="github.com"] {
+        display: none !important;
+    }
+    </style>
+"""
+st.markdown(hide_github_icon, unsafe_allow_html=True)
+# --- END HIDE GITHUB ICON ---
+
 # ------------------ Custom CSS Styling (Theme-Aware) ------------------
 def apply_custom_styling():
     st.markdown("""
