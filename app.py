@@ -4,19 +4,21 @@ from datetime import date
 import datetime # Required for MINYEAR, MAXYEAR
 from dateutil.relativedelta import relativedelta
 
-# --- HIDE STREAMLIT GITHUB ICON ---
-# This CSS injects a style tag into the app's HTML to hide the GitHub icon.
-# It targets the anchor tag (link) within the Streamlit toolbar that contains
-# 'github.com' in its href attribute and sets its display property to 'none'.
-hide_github_icon = """
+# Set the page configuration first
+st.set_page_config(page_title="📊 Depreciation Pro", layout="wide", initial_sidebar_state="collapsed")
+
+# --- HIDE THE ENTIRE STREAMLIT TOOLBAR ---
+# This CSS targets the container with the data-testid 'stToolbar' and hides it completely.
+hide_toolbar_css = """
     <style>
-    div[data-testid="stToolbar"] > a[href*="github.com"] {
+    [data-testid="stToolbar"] {
         display: none !important;
     }
     </style>
 """
-st.markdown(hide_github_icon, unsafe_allow_html=True)
-# --- END HIDE GITHUB ICON ---
+st.markdown(hide_toolbar_css, unsafe_allow_html=True)
+# --- END HIDE TOOLBAR ---
+
 
 # ------------------ Custom CSS Styling (Theme-Aware) ------------------
 def apply_custom_styling():
@@ -291,7 +293,6 @@ MAX_CALENDAR_DATE = datetime.date(datetime.MAXYEAR, 12, 31)
 CURRENCIES = {"USD ($)": "$", "EUR (€)": "€", "GBP (£)": "£", "JPY (¥)": "¥", "INR (₹)": "₹"}
 
 # ------------------ UI ------------------
-st.set_page_config(page_title="📊 Depreciation Pro", layout="wide", initial_sidebar_state="collapsed")
 apply_custom_styling()
 
 st.markdown("""<div class="app-main-header"><h1>📊 Depreciation Pro</h1><p>Advanced Straight-Line Depreciation Schedules with GAAP Compliance</p></div>""", unsafe_allow_html=True)
